@@ -1,0 +1,54 @@
+{
+    "dependency": {
+        "Configs": "./config",
+
+        "FlexFundsDB": "./dbs/flexfunds",
+
+        "UsersModel": "./models/users",
+        "FtpTranslationModel": "./models/ftp_translation",
+        "InteractiveBrokerActivityModel": "./models/ib_activity",
+        "InteractiveBrokerCashReportModel": "./models/ib_cash_report",
+        "InteractiveBrokerNavModel": "./models/ib_nav",
+        "InteractiveBrokerPositionsModel": "./models/ib_positions",
+        "TheoremIncomeStatementModel": "./models/theorem_income_statement",
+        "TheoremBalanceSheetModel": "./models/theorem_balance_sheet",
+        "CitiAllTransactionsModel": "./models/citi_all_transactions",
+        "CitiUnsettledTransactionsModel": "./models/citi_unsettled_transactions",
+        "CitiAvailablePositionModel": "./models/citi_available_position",
+        "CitiFixedIncomePositionTransactionsModel": "./models/citi_fixed_income_settled_position",
+        "PershingPositionsModel": "./models/pershing_positions",
+        "PershingTradesModel": "./models/pershing_trades",
+        "AdvancesHolidaysModel": "./models/advances_holidays",
+        "AdvancesInfoModel": "./models/advances_info",
+        "AdvancesInterestPaymentsModel": "./models/advances_interest_payments",
+        "AdvancesRepaymentsModel": "./models/advances_repayments",
+        "CounterpartiesModel": "./models/counterparties",
+        "PerformanceMonthlyModel": "./models/performance_monthly",
+        "PerformanceWeeklyModel": "./models/performance_weekly",
+        "PortfolioManagersModel": "./models/portfolio_managers",
+        "SeriesAgentInformationModel": "./models/series_agent_information",
+        "SeriesFeesTermsModel": "./models/series_fees_terms",
+        "SeriesNamesModel": "./models/series_names",
+        "SeriesPriceModel": "./models/series_price_table",
+        "SeriesProductInformationModel": "./models/series_product_information",
+
+        "CommonService": "./services/common",
+        "SqlService": "./services/sql",
+
+        "UserController": "./controllers/user",
+        "DataController": "./controllers/data",
+
+        "Route": "./routes",
+
+        "Utils": "./utils",
+
+        "Sequelize": {
+    			"path": "sequelize",
+    			"shim": true
+    		},
+        "colors": {
+          "path": "colors",
+          "shim": true
+        }
+    }
+}

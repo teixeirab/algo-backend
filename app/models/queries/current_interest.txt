@@ -1,0 +1,23 @@
+select group_concat(Isin separator ', ') as Isin,
+b.Series_Number,
+b.Loan_Payment_Date,
+b.Interest_Determination_Date,
+b.Nominal_Balance,
+b.Adjustment,
+(Nominal_Balance / 1000) * Adjustment as Adjusted_Total_Payable
+from (
+select *, floor((Total_Payable/ (Nominal_Balance/1000)) * 100) / 100 Adjustment from (
+select t1.series_number as Series_Number,
+t1.loan_payment_date as Loan_Payment_Date,
+interest_determination_date as Interest_Determination_Date,
+sum(nominal_balance) Nominal_Balance,
+sum(interest_receivable) + sum(principal_repayment) as Total_Payable
+from advances_interest_payments t1,
+(select series_number, min(loan_payment_date) loan_payment_date from (select series_number, datediff(loan_payment_date, curdate()) x, loan_payment_date from advances_interest_payments) a where x > 0 group by series_number) t2
+where t1.Series_Number = t2.series_number
+and t2.loan_payment_date = t1.Loan_Payment_Date
+group by t1.Series_Number, t1.Loan_Payment_Date
+)a)b,
+series_names s
+where b.series_number = s.series_number
+group by Series_Number, Loan_Payment_Date, Interest_Determination_Date, Nominal_Balance, Adjusted_Total_Payable, Adjustment;

@@ -1,0 +1,7 @@
+select coalesce(
+(select case when special_dates in ('Holiday','Int Date', 'Cant Trade') then 'Cant Trade' else price end from
+(select price, special_dates from series_price_table where series_number =  {param0} and settlement_date = '{param1}') a),
+(select nav_per_unit as price from nav_weekly_wide where series_number =  {param0} and left(period, 6) = {param2} limit 1),
+(select nav_per_unit as price from nav_monthly_wide where series_number =  {param0} and period = {param2}),
+'Price Not Available'
+) as price

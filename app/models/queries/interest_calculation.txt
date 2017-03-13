@@ -1,0 +1,10 @@
+select Loan_Payment_Date,
+sum(nominal_balance) Nominal_Balance,
+sum(interest_repayment) Interest_Repayment,
+sum(interest_receivable) Interest_Receivable,
+sum(interest_accrued) Interest_Accrued,
+sum(principal_repayment) Principal_Repayment
+from advances_interest_payments
+where series_number = {param0}
+group by series_number, loan_payment_date, interest_determination_date, series_interest_payment_date
+order by series_number, loan_payment_date;

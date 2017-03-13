@@ -1,0 +1,27 @@
+select
+t2.series_number 'Series Number',
+t2.isin 'ISIN',
+t3.product_type 'Type',
+coalesce(t1.settlement_date, t1.period) 'Report Date',
+coalesce(t1.price, case when t1.nav_per_unit = 0 then 100 else round(t1.nav_per_unit, 2) end, 'price_not_available') 'Price (%)',
+coalesce(t1.special_dates, '') 'Special Period'
+from
+(select * from (
+	select coalesce(t1.series_number, t0.series_number) series_number, t1.settlement_date, t1.price, t1.special_dates, t0.period, t0.nav_per_unit, t0.type from
+	series_price_table t1 left outer join theorem_balance_sheet t0 on (t0.series_number = t1.series_number and t1.settlement_date = t0.period)
+	Union
+	select coalesce(t1.series_number, t0.series_number) series_number, t1.settlement_date, t1.price, t1.special_dates, t0.period, t0.nav_per_unit, t0.type from
+	theorem_balance_sheet t0 left outer join series_price_table t1 on (t0.series_number = t1.series_number and t1.settlement_date = t0.period)
+)a) t1,
+series_names t2,
+series_product_information t3
+where 1=1
+and t2.series_number = t1.series_number
+and t3.series_number = t1.series_number
+and t3.status = 'A'
+and (
+    (year(period)  = year('{param0}') and month(period) = month('{param0}') and type = 'monthly')
+    or (period >= '{param0}' and period < '{param0}' and type = 'weekly')
+    or settlement_date = '{param0}'
+    )
+order by 'Series Number' desc;

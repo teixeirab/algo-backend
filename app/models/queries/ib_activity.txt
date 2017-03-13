@@ -1,0 +1,12 @@
+select
+symbol 'Symbol',
+bb_global_id 'Global ID',
+asset_type 'Asset Type',
+t0.currency 'Currency',
+settle_date 'Settle Date',
+quantity 'Quantity',
+unit_price 'Price',
+gross_amount 'Total'
+from ib_activity t0
+where account_id = '{param0}'
+and asset_type not in ('CASH')

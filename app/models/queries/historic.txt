@@ -1,0 +1,12 @@
+select
+t1.settlement_date,
+(select sum(case when t0.transaction_type = 'RF' then t0.settled_quantity else 0 end) / 1000000 x
+		from citi_all_transactions t0
+		where t0.settlement_date <= t1.settlement_date) as 'Nominal Issued in millions',
+(select sum(case when transaction_type = 'RF' then settled_quantity
+				 when transaction_type = 'DF' then -settled_quantity else 0 end) / 1000000 x
+		from citi_all_transactions t0
+		where t0.settlement_date <= t1.settlement_date)  as 'Nominal Active Notes in millions'
+from citi_all_transactions t1
+group by t1.settlement_date
+order by t1.settlement_date;

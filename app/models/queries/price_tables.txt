@@ -1,0 +1,8 @@
+select
+last_loan_payment_date 'Last Loan Payment Date',
+settlement_date 'Settlement Date',
+nav 'NAV',
+price 'Price (%)',
+special_dates 'Special Date'
+from series_price_table
+where series_number = {param0}
