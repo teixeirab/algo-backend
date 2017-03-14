@@ -11,7 +11,7 @@ module.exports = function(UsersModel, Utils, MailService) {
   this.login = function(req, res) {
     const username = req.body.username
     const password = req.body.password
-    if(!username || password) {
+    if(!username || !password) {
       return res.status(401).send()
     }
     UsersModel.findOne({
