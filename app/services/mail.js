@@ -8,7 +8,6 @@ module.exports = function(Configs) {
   let transporter = nodemailer.createTransport({
     host: Configs.email.host,
     port: Configs.email.port,
-    secure: true,
     auth: {
       user: Configs.email.user,
       pass: Configs.email.pass
