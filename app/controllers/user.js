@@ -2,7 +2,7 @@
 const crypto = require('crypto');
 const moment = require('moment')
 
-module.exports = function(UsersModel, Utils) {
+module.exports = function(UsersModel, Utils, MailService) {
   const that = this
   this.refreshAPIKey = function(str) {
     return crypto.createHash('sha1').update(str).digest('hex');
@@ -11,6 +11,9 @@ module.exports = function(UsersModel, Utils) {
   this.login = function(req, res) {
     const username = req.body.username
     const password = req.body.password
+    if(!username || password) {
+      return res.status(401).send()
+    }
     UsersModel.findOne({
       where: {
         email: username,
@@ -30,7 +33,6 @@ module.exports = function(UsersModel, Utils) {
   }
 
   this.auth = function(req, res, next) {
-    console.log('test')
     const apikey = req.get('x-apikey')
     UsersModel.findOne({where: {apikey: apikey}}).then((user) => {
       if (!user) {
@@ -54,11 +56,18 @@ module.exports = function(UsersModel, Utils) {
   this.resetPassword = function(req, res) {
     const email = req.body.email
     UsersModel.findOne({where: {email: email}}).then((user) => {
+      if(!user) {
+        return res.status(403).send()
+      }
       crypto.randomBytes(5, (err, buffer) => {
         var token = buffer.toString('hex');
-        console.log(token)
         user.password = Utils.hashPassword(token)
         user.save().then(() => {
+          MailService.sendMail({
+            to: user.email,
+            subject: 'Reset FlexFunds Account Password',
+            html: `Password has been reset. Please use password <b>${token}</b> to login.`
+          })
           res.status(204).send()
         }).catch((e) => {
           console.log(e)
@@ -81,7 +90,7 @@ module.exports = function(UsersModel, Utils) {
     const current = req.body.current
     const password = req.body.password
     if(!password || !current || req.user.password !== Utils.hashPassword(current)) {
-      return res.status(403)
+      return res.status(403).send()
     }
     req.user.password = Utils.hashPassword(password)
     req.user.save().then(() => {

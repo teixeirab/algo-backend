@@ -3,7 +3,8 @@
 const express = require('express'),
       cors = require('cors'),
       bodyParser = require('body-parser'),
-      methodOverride = require('method-override');
+      methodOverride = require('method-override'),
+      morgan = require('morgan');
 
 let app = express();
 // app.use(multer());
@@ -11,6 +12,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors({exposedHeaders: ['x-apikey']}));
 app.use(methodOverride());
+app.use(morgan('tiny'))
 
 //init container
 const depConfigs = require('./depend.json');

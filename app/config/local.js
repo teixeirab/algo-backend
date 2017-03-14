@@ -6,5 +6,12 @@ module.exports = {
   user:'root',
   password: 'test',
   db: 'flexfunds',
-  dbLogging: false
+  dbLogging: false,
+  frontUrl: 'http://localhost:8080/panel/client/',
+  email: {
+    host: 'smtp.mail.yahoo.com',
+    port: 465,
+    user: 'flextests@yahoo.com',
+    pass: 'testflex123'
+  }
 };
