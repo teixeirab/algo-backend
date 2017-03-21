@@ -2,17 +2,9 @@
 
 module.exports = function(FlexFundsDB, Sequelize) {
   return FlexFundsDB.define('advances_info', {
-    id: {
-      type: Sequelize.STRING,
-      allowNull: false,
-      primaryKey: true
-    },
-    type: {
-      type: Sequelize.ENUM('Initial','Transaction','Transaction-1'),
-      allowNull: false
-    },
     series_number: {
       type: Sequelize.INTEGER(11),
+      primaryKey: true,
       allowNull: false
     },
     interest_accrual_date: {
@@ -27,33 +19,33 @@ module.exports = function(FlexFundsDB, Sequelize) {
       type: Sequelize.DATE,
       allowNull: true
     },
-    nominal_amount: {
-      type: Sequelize.DECIMAL,
+    day_count_convention: {
+      type: Sequelize.ENUM('360','365','Actual'),
       allowNull: false
     },
-    interest_rate: {
+    principal_repayment_type: {
+      type: Sequelize.ENUM('Bullet','No Repayment','Amortized'),
+      allowNull: false
+    },
+    simple_interest_rate: {
       type: Sequelize.FLOAT,
       allowNull: false
     },
-    coupon_frequency: {
-      type: Sequelize.ENUM('D','M','Q','S','Y'),
+    simple_coupon_frequency: {
+      type: Sequelize.ENUM('Daily','Monthly','Quarterly','Semi-Annually','Yearly'),
       allowNull: false
     },
-    coupon_type: {
-      type: Sequelize.ENUM('simple','compound','floating'),
+    compounded_interest_rate: {
+      type: Sequelize.FLOAT,
       allowNull: false
     },
-    day_count_convention: {
-      type: Sequelize.ENUM('360','365','actual'),
+    compounded_coupon_frequency: {
+      type: Sequelize.ENUM('Daily','Monthly','Quarterly','Semi-Annually','Yearly'),
       allowNull: false
     },
-    interest_payment_type: {
-      type: Sequelize.ENUM('C','R'),
-      allowNull: true
-    },
-    repayment_type: {
-      type: Sequelize.ENUM('B','N','A'),
-      allowNull: true
+    compounded_frequency: {
+      type: Sequelize.ENUM('Daily','Monthly','Quarterly','Semi-Annually','Yearly'),
+      allowNull: false
     },
     price_table: {
       type: Sequelize.STRING,

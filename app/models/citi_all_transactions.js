@@ -1,7 +1,9 @@
 /* jshint indent: 2 */
-
+const async = require('async')
+const Promise = require('bluebird')
+const _ = require('lodash')
 module.exports = function(FlexFundsDB, Sequelize, SeriesNamesModel) {
-  return FlexFundsDB.define('citi_all_transactions', {
+  const model = FlexFundsDB.define('citi_unsettled_transactions', {
     client_reference: {
       type: Sequelize.STRING,
       allowNull: false,
@@ -100,8 +102,9 @@ module.exports = function(FlexFundsDB, Sequelize, SeriesNamesModel) {
     tableName: 'citi_all_transactions',
     hooks: {
       afterFind: function(rows, options) {
-        SeriesNamesModel.assignSeriesNumber(rows)
+        return SeriesNamesModel.assignSeriesNumber(rows)
       }
     }
   });
+  return model
 };

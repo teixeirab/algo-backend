@@ -1,53 +1,51 @@
 /* jshint indent: 2 */
 
+
+
 module.exports = function(FlexFundsDB, Sequelize) {
   return FlexFundsDB.define('borrowers', {
-    id: {
-      type: Sequelize.INTEGER(11),
-      primaryKey: true,
-      autoIncrement: true
-    },
     company_name: {
       type: Sequelize.STRING,
-      allowNull: true
+      allowNull: true,
+      primaryKey: true
     },
     series_number: {
       type: Sequelize.INTEGER(11),
-      allowNull: true
+      allowNull: false
     },
     contact_name: {
       type: Sequelize.STRING,
       allowNull: true
     },
     email: {
-      type: Sequelize.STRING,
+      type: Sequelize.TEXT,
       allowNull: true
     },
     cellphone: {
       type: Sequelize.STRING,
       allowNull: true
     },
-    address_1: {
-      type: Sequelize.STRING,
+    address1: {
+      type: Sequelize.TEXT,
       allowNull: true
     },
-    address_2: {
-      type: Sequelize.STRING,
+    address2: {
+      type: Sequelize.TEXT,
       allowNull: true
     },
     percent_outstanding: {
-      type: Sequelize.DOUBLE,
-      allowNull: true
+      type: Sequelize.FLOAT,
+      allowNull: false
     },
     status: {
       type: Sequelize.ENUM('A','D'),
-      allowNull: true,
-      defaultValue: "D"
+      allowNull: false
     },
     dt_added: {
       type: Sequelize.DATE,
-      allowNull: true,
-      defaultValue: new Date()
+      allowNull: false
     }
+  }, {
+    tableName: 'borrowers'
   });
 };

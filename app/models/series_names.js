@@ -9,6 +9,11 @@ module.exports = function(FlexFundsDB, Sequelize) {
       allowNull: false,
       primaryKey: true
     },
+    common_code: {
+      type: Sequelize.STRING,
+      allowNull: false,
+      primaryKey: true
+    },
     series_number: {
       type: Sequelize.INTEGER(11),
       allowNull: false

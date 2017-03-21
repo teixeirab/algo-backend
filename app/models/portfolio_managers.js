@@ -2,17 +2,13 @@
 
 module.exports = function(FlexFundsDB, Sequelize) {
   return FlexFundsDB.define('portfolio_managers', {
-    id: {
-      type: Sequelize.INTEGER(11),
+    company_name: {
+      type: Sequelize.TEXT,
       allowNull: false,
       primaryKey: true
     },
-    company_name: {
+    series_numbers: {
       type: Sequelize.TEXT,
-      allowNull: false
-    },
-    series_number: {
-      type: Sequelize.INTEGER(11),
       allowNull: false
     },
     contact_name: {
@@ -32,22 +28,6 @@ module.exports = function(FlexFundsDB, Sequelize) {
       allowNull: false
     },
     address2: {
-      type: Sequelize.TEXT,
-      allowNull: false
-    },
-    city: {
-      type: Sequelize.TEXT,
-      allowNull: false
-    },
-    state: {
-      type: Sequelize.TEXT,
-      allowNull: false
-    },
-    country: {
-      type: Sequelize.TEXT,
-      allowNull: false
-    },
-    zipcode: {
       type: Sequelize.TEXT,
       allowNull: false
     },

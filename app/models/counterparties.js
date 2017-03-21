@@ -31,22 +31,6 @@ module.exports = function(FlexFundsDB, Sequelize) {
       type: Sequelize.TEXT,
       allowNull: true
     },
-    city: {
-      type: Sequelize.STRING,
-      allowNull: true
-    },
-    state: {
-      type: Sequelize.STRING,
-      allowNull: true
-    },
-    country: {
-      type: Sequelize.STRING,
-      allowNull: true
-    },
-    zipcode: {
-      type: Sequelize.STRING,
-      allowNull: true
-    },
     custodian: {
       type: Sequelize.TEXT,
       allowNull: true
