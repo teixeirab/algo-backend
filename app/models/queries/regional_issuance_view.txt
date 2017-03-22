@@ -1,0 +1,49 @@
+SELECT
+		t2.region,
+        t2.product_type,
+        (SUM((CASE
+            WHEN (`t0`.`transaction_type` = 'RF') THEN `t0`.`settled_quantity`
+            ELSE 0
+        END)) / 1000000) AS `nominal_issued`,
+        (SUM((CASE
+            WHEN (`t0`.`transaction_type` = 'DVP') THEN `t0`.`settled_quantity`
+            WHEN (`t0`.`transaction_type` = 'RVP') THEN -(`t0`.`settled_quantity`)
+            WHEN (`t0`.`transaction_type` = 'DF') THEN `t0`.`settled_quantity`
+            ELSE 0
+        END)) / 1000000) AS `total_nav`,
+        COUNT(DISTINCT `t1`.`series_number`) AS `series_issued`,
+        COUNT(1) AS `number_of_transactions`
+    FROM
+        (`flexfunds`.`citi_all_transactions` `t0`
+        JOIN `flexfunds`.`series_names` `t1` on (t0.isin = t1.isin)
+        JOIN `flexfunds`.`series_product_information` `t2` on (t1.series_number = t2.series_number))
+    WHERE
+        (CONVERT( `t0`.`isin` USING UTF8) = `t1`.`isin`)
+	group by t2.region, t2.product_type
+
+
+    Union
+
+    SELECT
+		t2.region,
+        'All' product_type,
+        (SUM((CASE
+            WHEN (`t0`.`transaction_type` = 'RF') THEN `t0`.`settled_quantity`
+            ELSE 0
+        END)) / 1000000) AS `nominal_issued`,
+        (SUM((CASE
+            WHEN (`t0`.`transaction_type` = 'DVP') THEN `t0`.`settled_quantity`
+            WHEN (`t0`.`transaction_type` = 'RVP') THEN -(`t0`.`settled_quantity`)
+            WHEN (`t0`.`transaction_type` = 'DF') THEN `t0`.`settled_quantity`
+            ELSE 0
+        END)) / 1000000) AS `total_nav`,
+        COUNT(DISTINCT `t1`.`series_number`) AS `series_issued`,
+        COUNT(1) AS `number_of_transactions`
+    FROM
+        (`flexfunds`.`citi_all_transactions` `t0`
+        JOIN `flexfunds`.`series_names` `t1` on (t0.isin = t1.isin)
+        JOIN `flexfunds`.`series_product_information` `t2` on (t1.series_number = t2.series_number))
+    WHERE
+        (CONVERT( `t0`.`isin` USING UTF8) = `t1`.`isin`)
+	group by t2.region
+	order by nominal_issued desc

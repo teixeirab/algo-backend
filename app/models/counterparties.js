@@ -9,7 +9,7 @@ module.exports = function(FlexFundsDB, Sequelize) {
     },
     name: {
       type: Sequelize.STRING,
-      allowNull: true
+      allowNull: false
     },
     person_name: {
       type: Sequelize.STRING,
@@ -41,10 +41,6 @@ module.exports = function(FlexFundsDB, Sequelize) {
     },
     status: {
       type: Sequelize.ENUM('A','D'),
-      allowNull: false
-    },
-    dt_added: {
-      type: Sequelize.DATE,
       allowNull: false
     }
   }, {

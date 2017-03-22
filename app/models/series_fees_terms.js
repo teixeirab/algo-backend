@@ -9,15 +9,15 @@ module.exports = function(FlexFundsDB, Sequelize) {
     },
     operating_fees: {
       type: Sequelize.TEXT,
-      allowNull: false
+      allowNull: true
     },
     administrator_fees: {
       type: Sequelize.TEXT,
-      allowNull: false
+      allowNull: true
     },
     setup_fees: {
       type: Sequelize.TEXT,
-      allowNull: false
+      allowNull: true
     },
     arranger_fee: {
       type: Sequelize.TEXT,
@@ -37,7 +37,7 @@ module.exports = function(FlexFundsDB, Sequelize) {
     },
     external_offset: {
       type: Sequelize.INTEGER(1),
-      allowNull: false
+      allowNull: true
     }
   }, {
     tableName: 'series_fees_terms'

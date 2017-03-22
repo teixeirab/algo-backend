@@ -58,11 +58,6 @@ module.exports = function(FlexFundsDB, Sequelize) {
     valuation_frequency: {
       type: Sequelize.TEXT,
       allowNull: true
-    },
-    status: {
-      type: Sequelize.ENUM('A','D'),
-      allowNull: false,
-      defaultValue: "A"
     }
   }, {
     tableName: 'series_product_information'

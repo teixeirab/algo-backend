@@ -11,8 +11,7 @@ module.exports = function(FlexFundsDB, Sequelize) {
     },
     common_code: {
       type: Sequelize.STRING,
-      allowNull: false,
-      primaryKey: true
+      allowNull: false
     },
     series_number: {
       type: Sequelize.INTEGER(11),
@@ -32,7 +31,7 @@ module.exports = function(FlexFundsDB, Sequelize) {
     },
     status: {
       type: Sequelize.ENUM('A','D'),
-      allowNull: true,
+      allowNull: false,
       defaultValue: "A"
     }
   }, {

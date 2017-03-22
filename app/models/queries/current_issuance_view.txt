@@ -1,0 +1,18 @@
+SELECT
+        (SUM((CASE
+            WHEN (`t0`.`transaction_type` = 'RF') THEN `t0`.`settled_quantity`
+            ELSE 0
+        END)) / 1000000) AS `nominal_issued`,
+        (SUM((CASE
+            WHEN (`t0`.`transaction_type` = 'DVP') THEN `t0`.`settled_quantity`
+            WHEN (`t0`.`transaction_type` = 'RVP') THEN -(`t0`.`settled_quantity`)
+            WHEN (`t0`.`transaction_type` = 'DF') THEN `t0`.`settled_quantity`
+            ELSE 0
+        END)) / 1000000) AS `total_nav`,
+        COUNT(DISTINCT `t1`.`series_number`) AS `series_issued`,
+        COUNT(1) AS `number_of_transactions`
+    FROM
+        (`flexfunds`.`citi_all_transactions` `t0`
+        JOIN `flexfunds`.`series_names` `t1`)
+    WHERE
+        (CONVERT( `t0`.`isin` USING UTF8) = `t1`.`isin`)

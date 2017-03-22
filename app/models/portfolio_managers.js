@@ -13,31 +13,23 @@ module.exports = function(FlexFundsDB, Sequelize) {
     },
     contact_name: {
       type: Sequelize.TEXT,
-      allowNull: false
+      allowNull: true
     },
     email: {
       type: Sequelize.TEXT,
-      allowNull: false
+      allowNull: true
     },
     cellphone: {
       type: Sequelize.TEXT,
-      allowNull: false
+      allowNull: true
     },
     address1: {
       type: Sequelize.TEXT,
-      allowNull: false
+      allowNull: true
     },
     address2: {
       type: Sequelize.TEXT,
-      allowNull: false
-    },
-    status: {
-      type: Sequelize.ENUM('A','D'),
-      allowNull: false
-    },
-    dt_added: {
-      type: Sequelize.DATE,
-      allowNull: false
+      allowNull: true
     }
   }, {
     tableName: 'portfolio_managers'

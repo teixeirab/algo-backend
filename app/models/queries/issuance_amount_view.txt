@@ -1,3 +1,44 @@
-/**
- * Created by becogontijo on 3/21/2017.
- */
+SELECT
+        `t1`.`period` AS `period`,
+        (SELECT
+                (SUM((CASE
+                        WHEN (`t0`.`transaction_type` = 'RF') THEN `t0`.`settled_quantity`
+                        ELSE 0
+                    END)) / 1000000) AS `x`
+            FROM
+                `flexfunds`.`citi_all_transactions` `t0`
+            WHERE
+                (`t0`.`settlement_date` <= `t1`.`period`)) AS `nominal_issued`,
+        (SELECT
+                (SUM((CASE
+                        WHEN (`t0`.`transaction_type` = 'DVP') THEN `t0`.`settled_quantity`
+                        WHEN (`t0`.`transaction_type` = 'RVP') THEN -(`t0`.`settled_quantity`)
+                        WHEN (`t0`.`transaction_type` = 'DF') THEN `t0`.`settled_quantity`
+                        ELSE 0
+                    END)) / 1000000) AS `x`
+            FROM
+                `flexfunds`.`citi_all_transactions` `t0`
+            WHERE
+                (`t0`.`settlement_date` <= `t1`.`period`)) AS `securitized_assets`,
+        (SELECT
+                COUNT(`t0`.`settled_quantity`) AS `x`
+            FROM
+                `flexfunds`.`citi_all_transactions` `t0`
+            WHERE
+                (`t0`.`settlement_date` <= `t1`.`period`)) AS `number_of_transactions`,
+        (SELECT
+                COUNT(`t0`.`series_number`) AS `x`
+            FROM
+                `flexfunds`.`series_product_information` `t0`
+            WHERE
+                (`t0`.`issue_date` <= `t1`.`period`)) AS `number_of_issuances`
+    FROM
+        (SELECT
+            distinct(period) period
+        FROM
+            `flexfunds`.`theorem_balance_sheet`
+        WHERE
+            (`flexfunds`.`theorem_balance_sheet`.`type` = 'Weekly')
+            and period >= '{param0}') `t1`
+    GROUP BY `t1`.`period`
+    ORDER BY `t1`.`period`

@@ -1,8 +1,4 @@
 /* jshint indent: 2 */
-
-
-
-
 module.exports = function(FlexFundsDB, Sequelize) {
   return FlexFundsDB.define('advances_schedule', {
     id: {
@@ -28,7 +24,7 @@ module.exports = function(FlexFundsDB, Sequelize) {
     },
     previous_payment_date: {
       type: Sequelize.DATE,
-      allowNull: false
+      allowNull: true
     }
   }, {
     tableName: 'advances_schedule'

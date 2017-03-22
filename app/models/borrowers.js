@@ -6,7 +6,7 @@ module.exports = function(FlexFundsDB, Sequelize) {
   return FlexFundsDB.define('borrowers', {
     company_name: {
       type: Sequelize.STRING,
-      allowNull: true,
+      allowNull: false,
       primaryKey: true
     },
     series_number: {
@@ -15,7 +15,7 @@ module.exports = function(FlexFundsDB, Sequelize) {
     },
     contact_name: {
       type: Sequelize.STRING,
-      allowNull: true
+      allowNull: false
     },
     email: {
       type: Sequelize.TEXT,
@@ -35,14 +35,6 @@ module.exports = function(FlexFundsDB, Sequelize) {
     },
     percent_outstanding: {
       type: Sequelize.FLOAT,
-      allowNull: false
-    },
-    status: {
-      type: Sequelize.ENUM('A','D'),
-      allowNull: false
-    },
-    dt_added: {
-      type: Sequelize.DATE,
       allowNull: false
     }
   }, {

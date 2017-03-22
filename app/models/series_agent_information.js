@@ -8,35 +8,39 @@ module.exports = function(FlexFundsDB, Sequelize) {
       defaultValue: "0",
       primaryKey: true
     },
-    'Calculation Agent': {
+    issuer: {
+      type: Sequelize.TEXT,
+      allowNull: false
+    },
+    calculation_agent: {
       type: Sequelize.TEXT,
       allowNull: true
     },
-    Arranger: {
+    arranger: {
       type: Sequelize.TEXT,
       allowNull: true
     },
-    Administrator: {
+    administrator: {
       type: Sequelize.TEXT,
       allowNull: true
     },
-    Custodian: {
+    custodian: {
       type: Sequelize.TEXT,
       allowNull: true
     },
-    'BD of Record': {
+    bd_of_record: {
       type: Sequelize.TEXT,
       allowNull: true
     },
-    'Sale Agent': {
+    sale_agent: {
       type: Sequelize.TEXT,
       allowNull: true
     },
-    'Placing Agent': {
+    placing_agent: {
       type: Sequelize.TEXT,
       allowNull: true
     },
-    'Portfolio Manager': {
+    portfolio_manager: {
       type: Sequelize.DECIMAL,
       allowNull: true
     }

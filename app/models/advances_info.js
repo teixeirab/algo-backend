@@ -9,15 +9,15 @@ module.exports = function(FlexFundsDB, Sequelize) {
     },
     interest_accrual_date: {
       type: Sequelize.DATE,
-      allowNull: true
+      allowNull: false
     },
     first_interest_date: {
       type: Sequelize.DATE,
-      allowNull: true
+      allowNull: false
     },
     maturity_date: {
       type: Sequelize.DATE,
-      allowNull: true
+      allowNull: false
     },
     day_count_convention: {
       type: Sequelize.ENUM('360','365','Actual'),
@@ -29,29 +29,30 @@ module.exports = function(FlexFundsDB, Sequelize) {
     },
     simple_interest_rate: {
       type: Sequelize.FLOAT,
-      allowNull: false
+      allowNull: true
     },
     simple_coupon_frequency: {
       type: Sequelize.ENUM('Daily','Monthly','Quarterly','Semi-Annually','Yearly'),
-      allowNull: false
+      allowNull: true
     },
     compounded_interest_rate: {
       type: Sequelize.FLOAT,
-      allowNull: false
+      allowNull: true
     },
     compounded_coupon_frequency: {
       type: Sequelize.ENUM('Daily','Monthly','Quarterly','Semi-Annually','Yearly'),
-      allowNull: false
+      allowNull: true
     },
     compounded_frequency: {
       type: Sequelize.ENUM('Daily','Monthly','Quarterly','Semi-Annually','Yearly'),
-      allowNull: false
+      allowNull: true
     },
     price_table: {
       type: Sequelize.STRING,
       allowNull: false,
       defaultValue: "0"
     }
+
   }, {
     tableName: 'advances_info'
   });
