@@ -39,6 +39,7 @@ module.exports = function(FlexFundsDB, Sequelize) {
   })
 
   model.assignSeriesNumber = function(rows) {
+    rows = Array.isArray(rows) ? rows : [rows]
     return this.findAll().then((seriesNames) => {
       rows.forEach((row) => {
         const matched = _.find(seriesNames, (sn) => {
