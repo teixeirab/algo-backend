@@ -67,11 +67,11 @@ module.exports = function(FlexFundsDB, Sequelize, SeriesNamesModel) {
     },
     counterparty_id: {
       type: Sequelize.STRING,
-      allowNull: true
+      allowNull: false
     },
     legal_confirm: {
       type: Sequelize.INTEGER(1),
-      allowNull: true,
+      allowNull: false,
       defaultValue: 0
     },
     dt_added: {

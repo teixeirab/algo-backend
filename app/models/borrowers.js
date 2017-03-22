@@ -1,7 +1,5 @@
 /* jshint indent: 2 */
 
-
-
 module.exports = function(FlexFundsDB, Sequelize) {
   return FlexFundsDB.define('borrowers', {
     company_name: {

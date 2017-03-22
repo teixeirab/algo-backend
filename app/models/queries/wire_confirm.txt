@@ -1,0 +1,5 @@
+UPDATE `flexfunds`.{param0}
+SET
+`wire_confirm` = {param1},
+`wire_amount` = {param2},
+WHERE `client_reference` = {param4};
