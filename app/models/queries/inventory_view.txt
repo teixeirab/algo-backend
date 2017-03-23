@@ -1,0 +1,13 @@
+SELECT
+b.series_number 'Series Number',
+b.six_name 'Series Name',
+a.isin 'ISIN',
+settled_position 'Settled Position',
+blocked_position 'Blocked Position',
+available_position 'Available Position'
+from
+citi_available_position a,
+series_names b
+where a.isin = b.isin
+and period = '{param0}'
+and account_id in ('6017709722');

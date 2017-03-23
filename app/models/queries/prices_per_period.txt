@@ -18,10 +18,10 @@ series_product_information t3
 where 1=1
 and t2.series_number = t1.series_number
 and t3.series_number = t1.series_number
-and t3.status = 'A'
-and (
-    (year(period)  = year('{param0}') and month(period) = month('{param0}') and type = 'monthly')
-    or (period >= '{param0}' and period < '{param0}' and type = 'weekly')
+and t2.status = 'A'
+and (1=0
+    or (year(period)  = year('{param0}') - 1 and month(period) = month('{param0}') - 1 and type = 'Monthly' and t1.series_number not in (select distinct(series_number) from series_price_table))
+    or (period >= '{param0}' - INTERVAL WEEKDAY('{param0}') + 3 DAY and period < '{param0}' and type = 'Weekly' and t1.series_number not in (select distinct(series_number) from series_price_table))
     or settlement_date = '{param0}'
     )
 order by 'Series Number' desc;

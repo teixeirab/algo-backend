@@ -1,4 +1,0 @@
-UPDATE `flexfunds`.{param0}
-SET
-`legal_confirm` = {param1}
-WHERE `client_reference` = {param3};
