@@ -1,0 +1,48 @@
+-- INTERACTIVE BROKERS --
+select
+concat(t0.series_number, '-', account_id) as 'Account ID',
+security_id as 'Security ID',
+security_description as 'Description',
+symbol as 'Symbol',
+case when asset_type='STK' then 'EQUITY' when asset_type='BOND' then 'FIXED INCOME' when asset_type='OPT' then 'OPTION' else asset_type end as 'Asset Type',
+market_price as 'Price',
+market_value as 'Total Value',
+t1.currency as 'Currency'
+from series_product_information t0,
+ib_positions t1
+where account_number = account_id
+and report_date = '{param0}'
+
+Union
+
+-- PERSHING --
+select
+concat(t0.series_number, '-', t1.account_number) as 'Account ID',
+case when locate('ISIN', description)  > 0 then substring(description, locate('ISINcas', description) + 5, 12) else cusip end as 'Security ID',
+cast(description as char(45)) as 'Description',
+security_id as 'Symbol',
+case when asset_classification='CASH, MONEY FUNDS, BANK DEPOSITS' then 'CASH' when asset_classification='MUTUAL_FUND' then 'EQUITY' else asset_classification end as 'Asset Type',
+price as 'Price',
+market_value as 'Total Value',
+'USD' as 'Currency'
+from series_product_information t0,
+pershing_positions t1
+where t1.account_number = t0.account_number
+and period = '{param0}'
+
+Union
+
+-- CITIBANK --
+select
+concat(t0.series_number, '-', t1.account_id) as 'Account ID',
+t1.isin as 'Security ID',
+t1.issue_name as 'Description',
+t1.sec_id as 'Symbol',
+case when t2.isin is null then 'EQUITY' else 'FIXED INCOME' end as 'Asset Type',
+t1.market_value / t1.settled_quantity as 'Price',
+t1.market_value as 'Total Value',
+t1.currency as 'Currency'
+from series_product_information t0,
+citi_positions_valuations t1 left outer join citi_fixed_income_settled_position t2 on (t1.account_id = t2.account_id and t1.as_of_date = t2.as_of_date and t1.isin = t2.isin)
+where t1.account_id = t0.account_number
+and t1.as_of_date = '{param0}';

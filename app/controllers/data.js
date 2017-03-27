@@ -88,7 +88,8 @@ module.exports = function(CommonService, SqlService) {
   this.findOptions = function(req, res) {
     const table = req.params.table;
     const selectType = req.params.selectType;
-    SqlService.findOptions(table, selectType).then((rows) => {
+    const query_name = req.params.query_name;
+    SqlService.findOptions(table, selectType, query_name).then((rows) => {
       res.send(rows)
     }).catch((err) => {
       res.status(400).send(err)
