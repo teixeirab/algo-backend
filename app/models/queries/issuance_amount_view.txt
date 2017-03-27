@@ -42,6 +42,6 @@ SELECT
             `flexfunds`.`theorem_balance_sheet`
         WHERE
             (`flexfunds`.`theorem_balance_sheet`.`type` = 'Weekly')
-            ) `t1`
+            and period >= '{param0}') `t1`
     GROUP BY `t1`.`period`
     ORDER BY `t1`.`period`
