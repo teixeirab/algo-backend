@@ -1,0 +1,23 @@
+select
+t0.series_name 'Series Name',
+t1.series_number 'Series Number',
+t1.product_type 'Product Type',
+case when product_type = 'Wrapper' then 'Equity' when product_type='Loan' then 'Debt' else '' end as 'Asset',
+t1.shares 'Shares',
+t1.type_of_subscription 'Type of Subscription',
+t1.currency 'Currency',
+t2.total_equity 'Fair Value',
+t1.issue_date 'Issue Date',
+t1.custodian 'Custodian',
+t1.account_number 'Account Number',
+case when t3.simple_interest_rate is not null and t3.compounded_interest_rate is not null then 'Simple/Compound'
+when t3.simple_interest_rate is not null then 'Simple'
+when t3.compounded_interest_rate is not null then 'Compounded' else '' end 'Interest Type',
+coalesce(t3.simple_interest_rate, 0) + coalesce(t3.compounded_interest_rate, 0) 'Interest Rate',
+coalesce(concat(t3.simple_coupon_frequency, '/', t3.compounded_coupon_frequency), t3.simple_coupon_frequency, t3.compounded_coupon_frequency) 'Coupon Frequency'
+from
+(select distinct(series_number) series_number, series_name from series_names) t0
+				join series_product_information t1 on (t0.series_number = t1.series_number)
+				left outer join theorem_balance_sheet t2 on (t1.series_number = t2.series_number and t2.period = '{param0}')
+                left outer join advances_info t3 on (t1.series_number = t3.series_number)
+order by t0.series_number asc;

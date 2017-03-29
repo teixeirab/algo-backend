@@ -9,7 +9,7 @@ module.exports = function(FlexFundsDB, Sequelize, Configs, Utils, MailService) {
       autoIncrement: true
     },
     user_type: {
-      type: Sequelize.ENUM('Trading','Operations','Accounting','Management','Admin'),
+      type: Sequelize.ENUM('Trading','Operations','Accounting','Management','Admin', 'Theorem'),
       allowNull: false,
       defaultValue: "Trading"
     },
