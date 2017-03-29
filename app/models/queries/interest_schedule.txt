@@ -1,7 +1,38 @@
-select Loan_Payment_Date, Interest_Determination_Date, Series_Interest_Payment_Date,
-sum(nominal_balance) Nominal_Balance, sum(interest_receivable) Interest_Receivable,
-sum(principal_repayment) Principal_Repayment
-from advances_interest_payments
-where series_number = {param0}
-group by series_number, loan_payment_date, interest_determination_date, series_interest_payment_date
-order by series_number, loan_payment_date;
+SELECT
+        `a`.`id` AS `id`,
+        `a`.`loan_payment_date` AS `Loan Payment Date`,
+        `a`.`interest_determination_date` AS `Interest Determination Date`,
+        `a`.`series_interest_payment_date` AS `Series Interest Payment Date`,
+        `a`.`previous_payment_date` AS `Previous Payment Date`,
+        ((SELECT
+                SUM((CASE
+                        WHEN (`t0`.`transaction_type` = 'DVP') THEN `t0`.`quantity`
+                        WHEN (`t0`.`transaction_type` = 'RVP') THEN -(`t0`.`quantity`)
+                        WHEN (`t0`.`transaction_type` = 'DF') THEN `t0`.`quantity`
+                        ELSE 0
+                    END)) AS `x`
+            FROM
+                (SELECT
+                    `series`.`series_number` AS `series_number`,
+                        `citi`.`settlement_date` AS `settlement_date`,
+                        `citi`.`transaction_type` AS `transaction_type`,
+                        `citi`.`quantity` AS `quantity`
+                FROM
+                    (`flexfunds`.`citi_all_transactions` `citi`
+                JOIN `flexfunds`.`series_names` `series`)
+                WHERE
+                    (CONVERT( `citi`.`isin` USING UTF8) = `series`.`isin`)) `t0`
+            WHERE
+                ((`t0`.`settlement_date` <= `a`.`loan_payment_date`)
+                    AND (`t0`.`series_number` = `a`.`series_number`))) - COALESCE((SELECT
+                        SUM(`t0`.`repayment_amount`) AS `x`
+                    FROM
+                        `flexfunds`.`advances_repayments` `t0`
+                    WHERE
+                        ((`t0`.`repayment_date` < `a`.`loan_payment_date`)
+                            AND (`t0`.`series_number` = `a`.`series_number`))),
+                0)) AS `Nominal Outstanding`
+    FROM
+        `flexfunds`.`advances_schedule` `a`
+	where series_number= '{param0}'
+    ORDER BY `a`.`series_number` , `a`.`loan_payment_date`
