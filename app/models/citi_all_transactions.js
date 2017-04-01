@@ -3,7 +3,7 @@ const async = require('async')
 const Promise = require('bluebird')
 const _ = require('lodash')
 module.exports = function(FlexFundsDB, Sequelize, SeriesNamesModel) {
-  const model = FlexFundsDB.define('citi_unsettled_transactions', {
+  const model = FlexFundsDB.define('citi_all_transactions', {
     client_reference: {
       type: Sequelize.STRING,
       allowNull: false,
