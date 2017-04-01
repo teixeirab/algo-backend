@@ -10,7 +10,6 @@ module.exports = function(PerformanceService) {
 
   this.getHistoryPerformance = function(req, res) {
     const seriesNumber = req.params.seriesNumber
-    let result = {}
     async.waterfall([
       function(cb) {
         PerformanceService
@@ -20,23 +19,22 @@ module.exports = function(PerformanceService) {
           })
       },
       function(monthlyData, cb) {
-        PerformanceService
-          .calcMonthlyReturns(monthlyData)
-          .then((monthlyReturns) => {
-            result['monthlyReturns'] = monthlyReturns
-            cb(undefined, monthlyData)
-          })
+        let monthlyReturns = PerformanceService.calcMonthlyReturns(monthlyData)
+        cb(undefined, monthlyData, monthlyReturns)
       },
-      function(monthlyData, cb) {
-        PerformanceService
-          .calcCumulativeReturns(monthlyData)
-          .then((cumulativeReturns) => {
-            result['cumulativeReturns'] = cumulativeReturns
-            cb(undefined)
+      function(monthlyData, monthlyReturns, cb) {
+        let cumulativeReturns = PerformanceService.calcCumulativeReturns(monthlyData)
+        monthlyReturns.forEach((ret) => {
+          cumulativeReturns.forEach((cumRet) => {
+            if(cumRet.period.toISOString() === ret.period.toISOString()) {
+              ret.cumulativeReturn = cumRet.cumulativeReturn
+            }
           })
+        })
+        cb(undefined, monthlyReturns)
       }
-    ], () => {
-      res.send(result)
+    ], (err, monthlyReturns) => {
+      res.send(monthlyReturns)
     })
   }
 

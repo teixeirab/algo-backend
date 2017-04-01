@@ -59,7 +59,7 @@ module.exports = function(TheoremBalanceSheetModel, TheoremIncomeStatementModel,
       returns.push({
         period: monthlyData[i].period,
         price: monthlyData[i].nav_per_unit,
-        growth: Math.round(growth * 1000) / 1000
+        monthlyReturn: Math.round(growth * 1000) / 1000
       })
     }
     return returns
@@ -79,7 +79,7 @@ module.exports = function(TheoremBalanceSheetModel, TheoremIncomeStatementModel,
       returns.push({
         period: monthlyData[i].period,
         price: monthlyData[i].nav_per_unit,
-        cumulativeGrowth: Math.round(growth * 1000) / 1000
+        cumulativeReturn: Math.round(growth * 1000) / 1000
       })
     }
     return returns
@@ -106,18 +106,19 @@ module.exports = function(TheoremBalanceSheetModel, TheoremIncomeStatementModel,
   }
 
   this.calculateStandardDeviation = function(monthlyReturns) {
-    let mean = _.sum(monthlyReturns, (ret) => {
-      return ret.growth
-    })/monthlyReturns.length
-    monthlyReturns.forEach((ret) => {
-      ret.stdev = Math.pow(ret.growth - mean, 2)
+    let count = monthlyReturns.length
+    let mean = _.sumBy(monthlyReturns, (ret) => {
+      return ret.monthlyReturn
+    }) / count
+    let errorSum = _.sumBy(monthlyReturns, (ret) => {
+      return Math.pow(ret.monthlyReturn - mean, 2)
     })
-    return monthlyReturns
+    return Math.sqrt(errorSum / count)
   }
 
   this.getMaxMinReturns = function(monthlyReturns) {
     monthlyReturns.sort((a, b) => {
-      return a.growth - b.growth
+      return a.monthlyReturn - b.monthlyReturn
     })
     return {max: monthlyReturns[monthlyReturns.length - 1], min: monthlyReturns[0]}
   }
