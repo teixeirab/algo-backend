@@ -151,7 +151,7 @@ module.exports = function(TheoremBalanceSheetModel, TheoremIncomeStatementModel,
           series_number: seriesNumber
         }
       }).then((incomes) => {
-        let total = _.sum(incomes, (income) => {
+        let total = _.sumBy(incomes, (income) => {
           return income.dividend + income.loan_interest_income_received
         })
         deferred.resolve(total / balanceSheet.number_of_units_held)

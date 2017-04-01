@@ -89,9 +89,6 @@ module.exports = function(PerformanceService) {
       },
       function(cb) {
         PerformanceService.calcDistributions(seriesNumber).then((total) => {
-          if (!total) {
-            return cb()
-          }
           result.totalReturnWithDistribution = result.totalReturn + total
           cb()
         })
