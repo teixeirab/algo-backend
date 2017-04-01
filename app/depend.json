@@ -34,11 +34,15 @@
         "CommonService": "./services/common",
         "SqlService": "./services/sql",
         "MailService": "./services/mail",
+        "PerformanceService": "./services/performance",
+        "LoanService": "./services/loan",
 
         "UserController": "./controllers/user",
         "DataController": "./controllers/data",
+        "SeriesController": "./controllers/series",
 
         "Route": "./routes",
+        "SeriesRoute": "./routes/series",
 
         "Utils": "./utils",
 
