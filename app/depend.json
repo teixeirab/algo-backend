@@ -35,15 +35,14 @@
         "SqlService": "./services/sql",
         "MailService": "./services/mail",
         "PerformanceService": "./services/performance",
+        "LoanService": "./services/loan",
 
         "UserController": "./controllers/user",
         "DataController": "./controllers/data",
-        "PerformanceController": "./controllers/performance",
-        "LoanController": "./controllers/loan",
+        "SeriesController": "./controllers/series",
 
         "Route": "./routes",
-        "PerformanceRoute": "./routes/performance",
-        "LoanRoute": "./routes/loan",
+        "SeriesRoute": "./routes/series",
 
         "Utils": "./utils",
 

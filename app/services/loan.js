@@ -3,7 +3,10 @@ const Promise = require('bluebird')
 const moment = require('moment')
 const _ = require('lodash')
 
-module.exports = function(SeriesNamesModel, AdvancesInfoModel, AdvancesRepaymentsModel, CitiAllTransactionsModel) {
+module.exports = function(SeriesNamesModel,
+                          AdvancesInfoModel,
+                          AdvancesRepaymentsModel,
+                          CitiAllTransactionsModel) {
   let that = this
 
   this.getLoanInfo = function(seriesNumber) {
@@ -14,6 +17,9 @@ module.exports = function(SeriesNamesModel, AdvancesInfoModel, AdvancesRepayment
         series_number: seriesNumber
       }
     }).then((advInfo) => {
+      if (!advInfo) {
+        return deferred.resolve()
+      }
       result.first_interest_date = advInfo.first_interest_date
       result.maturity_date = advInfo.maturity_date
       result.day_count_convention = advInfo.day_count_convention
@@ -30,7 +36,7 @@ module.exports = function(SeriesNamesModel, AdvancesInfoModel, AdvancesRepayment
             isin: seriesName.isin
           }
         }).then((txs) => {
-          let quantitySum = _.sum(txs, (tx) => {
+          let quantitySum = _.sumBy(txs, (tx) => {
             if (['DVP', 'DF'].indexOf(tx.transaction_type) > -1) {
               return tx.quantity
             }
@@ -44,7 +50,7 @@ module.exports = function(SeriesNamesModel, AdvancesInfoModel, AdvancesRepayment
               series_number: seriesNumber
             }
           }).then((repayments) => {
-            let repaymentSum = _.sum(repayments, (repay) => {
+            let repaymentSum = _.sumBy(repayments, (repay) => {
               return repay.repayment_amount
             }) || 0
             result.nominal_outstanding = quantitySum - repaymentSum

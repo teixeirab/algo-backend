@@ -3,11 +3,8 @@ const async = require('async')
 const moment = require('moment')
 const _ = require('lodash')
 
-module.exports = function(PerformanceService) {
+module.exports = function(PerformanceService, LoanService) {
   const that = this
-  this.refreshAPIKey = function(str) {
-    return crypto.createHash('sha1').update(str).digest('hex');
-  };
 
   this.getHistoryPerformance = function(req, res) {
     const seriesNumber = req.params.seriesNumber
@@ -17,6 +14,9 @@ module.exports = function(PerformanceService) {
           .getMonthlyData(seriesNumber)
           .then((monthlyData) => {
             cb(undefined, monthlyData)
+          })
+          .catch((e) => {
+            cb(e)
           })
       },
       function(monthlyData, cb) {
@@ -35,6 +35,9 @@ module.exports = function(PerformanceService) {
         cb(undefined, monthlyReturns)
       }
     ], (err, monthlyReturns) => {
+      if (err) {
+        return res.status(404).send(err)
+      }
       res.send(monthlyReturns)
     })
   }
@@ -42,6 +45,9 @@ module.exports = function(PerformanceService) {
   this.getRiskData = function(req, res) {
     const seriesNumber = req.params.seriesNumber
     PerformanceService.getMonthlyReturns(seriesNumber).then((returns) => {
+      if (!returns || !returns.length) {
+        return {}
+      }
       let stdev = PerformanceService.calculateStandardDeviation(returns)
       let maxmin = PerformanceService.getMaxMinReturns(returns)
       res.send({
@@ -96,7 +102,13 @@ module.exports = function(PerformanceService) {
     ], () => {
       res.send(result)
     })
+  }
 
+  this.getLoanInfo = function(req, res) {
+    const seriesNumber = req.params.seriesNumber
+    LoanService.getLoanInfo(seriesNumber).then((result) => {
+      res.send(result)
+    })
   }
 
   return this

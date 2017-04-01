@@ -3,7 +3,10 @@ const Promise = require('bluebird')
 const moment = require('moment')
 const _ = require('lodash')
 
-module.exports = function(TheoremBalanceSheetModel, TheoremIncomeStatementModel, SeriesProductInformationModel) {
+module.exports = function(TheoremBalanceSheetModel,
+                          TheoremIncomeStatementModel,
+                          SeriesProductInformationModel) {
+
   let that = this
 
   this.getMonthlyData = function(seriesNumber) {
@@ -13,6 +16,9 @@ module.exports = function(TheoremBalanceSheetModel, TheoremIncomeStatementModel,
         series_number: seriesNumber
       }
     }).then((productInfo) => {
+      if (!productInfo) {
+        return deferred.reject({msg: 'no series product info found'})
+      }
       TheoremBalanceSheetModel.findAll({
         where: {
           series_number: seriesNumber,
