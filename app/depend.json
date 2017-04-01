@@ -38,8 +38,12 @@
 
         "UserController": "./controllers/user",
         "DataController": "./controllers/data",
+        "PerformanceController": "./controllers/performance",
+        "LoanController": "./controllers/loan",
 
         "Route": "./routes",
+        "PerformanceRoute": "./routes/performance",
+        "LoanRoute": "./routes/loan",
 
         "Utils": "./utils",
 
