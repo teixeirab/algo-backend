@@ -3,7 +3,7 @@ const Promise = require('bluebird')
 const moment = require('moment')
 const _ = require('lodash')
 
-module.exports = function(TheoremBalanceSheetModel, SeriesProductInformationModel) {
+module.exports = function(TheoremBalanceSheetModel, TheoremIncomeStatementModel, SeriesProductInformationModel) {
   let that = this
 
   this.getMonthlyData = function(seriesNumber) {
@@ -133,6 +133,28 @@ module.exports = function(TheoremBalanceSheetModel, SeriesProductInformationMode
         return b.nav_per_unit - a.nav_per_unit
       })
       deferred.resolve(data[0])
+    })
+    return deferred.promise
+  }
+
+  this.calcDistributions = function(seriesNumber) {
+    const deferred = Promise.pending()
+    TheoremBalanceSheetModel.findOne({
+      where: {
+        series_number: seriesNumber
+      },
+      orderBy: 'period desc'
+    }).then((balanceSheet) => {
+      TheoremIncomeStatementModel.findAll({
+        where: {
+          series_number: seriesNumber
+        }
+      }).then((incomes) => {
+        let total = _.sum(incomes, (income) => {
+          return income.dividend + income.loan_interest_income_received
+        })
+        deferred.resolve(total / balanceSheet.number_of_units_held)
+      })
     })
     return deferred.promise
   }

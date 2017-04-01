@@ -85,6 +85,15 @@ module.exports = function(PerformanceService) {
           result.highWaterMark = max.nav_per_unit
           cb()
         })
+      },
+      function(cb) {
+        PerformanceService.calcDistributions(seriesNumber).then((total) => {
+          if (!total) {
+            return cb()
+          }
+          result.totalReturnWithDistribution = result.totalReturn + total
+          cb()
+        })
       }
     ], () => {
       res.send(result)
