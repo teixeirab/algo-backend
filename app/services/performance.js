@@ -16,7 +16,10 @@ module.exports = function(TheoremBalanceSheetModel, SeriesProductInformationMode
       TheoremBalanceSheetModel.findAll({
         where: {
           series_number: seriesNumber,
-          type: productInfo.nav_frequency
+          type: productInfo.nav_frequency,
+          nav_per_unit: {
+            gt: 0
+          }
         }
       }).then((data) => {
         if (productInfo.nav_frequency === 'Weekly') {
