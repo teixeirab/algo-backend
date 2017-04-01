@@ -3,34 +3,40 @@ const Promise = require('bluebird')
 const moment = require('moment')
 const _ = require('lodash')
 
-module.exports = function(TheoremBalanceSheetModel) {
+module.exports = function(TheoremBalanceSheetModel, SeriesProductInformationModel) {
   let that = this
 
-  this.getMonthlyData = function(seriesNumber, type) {
+  this.getMonthlyData = function(seriesNumber) {
     const deferred = Promise.pending()
-    TheoremBalanceSheetModel.findAll({
+    SeriesProductInformationModel.findOne({
       where: {
-        series_number: seriesNumber,
-        type: type || 'Monthly'
+        series_number: seriesNumber
       }
-    }).then((data) => {
-      if (type === 'Weekly') {
-        data.sort((a, b) => {
-          return a.period - b.period
-        })
-        data = that.getLastMonthReportByCurrentWeek(data, data[data.length - 1])
-        data.sort((a, b) => {
-          return a.period - b.period
-        })
-      }
-      deferred.resolve(data)
+    }).then((productInfo) => {
+      TheoremBalanceSheetModel.findAll({
+        where: {
+          series_number: seriesNumber,
+          type: productInfo.nav_frequency
+        }
+      }).then((data) => {
+        if (productInfo.nav_frequency === 'Weekly') {
+          data.sort((a, b) => {
+            return a.period - b.period
+          })
+          data = that.getLastMonthReportByCurrentWeek(data, data[data.length - 1])
+          data.sort((a, b) => {
+            return a.period - b.period
+          })
+        }
+        deferred.resolve(data)
+      })
     })
     return deferred.promise
   }
 
-  this.getMonthlyReturns = function(seriesNumber, type) {
+  this.getMonthlyReturns = function(seriesNumber) {
     const deferred = Promise.pending()
-    this.getMonthlyData(seriesNumber, type).then((data) => {
+    this.getMonthlyData(seriesNumber).then((data) => {
       let returns = that.calcMonthlyReturns(data)
       deferred.resolve(returns)
     })

@@ -10,6 +10,7 @@ describe('service tests', function() {
   let vars = [
     'PerformanceService',
     'TheoremBalanceSheetModel',
+    'SeriesProductInformationModel',
     'FlexFundsDB'
   ]
   const formatDate = (date) => {
@@ -30,7 +31,10 @@ describe('service tests', function() {
     it('monthly returns based on monthly period', function (done) {
       const seriesNumber = 1
       helper.batchCreateInstances([
-        ['TheoremBalanceSheetModel',[
+        ['SeriesProductInformationModel', [
+          {nav_frequency: 'Monthly', series_number: 1, bloomberg_name: 'a', product_type: 'Fund', issue_date: new Date(), maturity_date: new Date(), region: 'South Cone', currency: 'USD'}
+        ]],
+        ['TheoremBalanceSheetModel', [
           {period: moment('2016-03-30'), series_number: 1, type: 'Monthly', nav_per_unit: 1},
           {period: moment('2016-04-30'), series_number: 1, type: 'Monthly', nav_per_unit: 1.1},
           {period: moment('2016-04-30'), series_number: 2, type: 'Monthly', nav_per_unit: 3},
@@ -48,6 +52,9 @@ describe('service tests', function() {
     it('monthly returns based on weekly period', function (done) {
       const seriesNumber = 1
       helper.batchCreateInstances([
+        ['SeriesProductInformationModel', [
+          {nav_frequency: 'Weekly', series_number: 1, bloomberg_name: 'a', product_type: 'Fund', issue_date: new Date(), maturity_date: new Date(), region: 'South Cone', currency: 'USD'}
+        ]],
         ['TheoremBalanceSheetModel',[
           {period: moment('2016-03-23'), series_number: 1, type: 'Weekly', nav_per_unit: 1},
           {period: moment('2016-03-30'), series_number: 1, type: 'Weekly', nav_per_unit: 1},
