@@ -3,8 +3,21 @@ const async = require('async')
 const moment = require('moment')
 const _ = require('lodash')
 
-module.exports = function(PerformanceService, LoanService) {
+module.exports = function(PerformanceService, LoanService, SeriesProductInformationModel) {
   const that = this
+
+  this.checkExists = function(req, res, next, seriesNumber) {
+    SeriesProductInformationModel.findOne({
+      where: {
+        series_number: seriesNumber
+      }
+    }).then((productInfo) => {
+      if (!productInfo) {
+        return res.status(404).send({msg: 'no series product info found'})
+      }
+      next()
+    })
+  }
 
   this.getHistoryPerformance = function(req, res) {
     const seriesNumber = req.params.seriesNumber
@@ -13,6 +26,9 @@ module.exports = function(PerformanceService, LoanService) {
         PerformanceService
           .getMonthlyData(seriesNumber)
           .then((monthlyData) => {
+            if (monthlyData.length === 0) {
+              return cb({msg: 'no monthly reports found'})
+            }
             cb(undefined, monthlyData)
           })
           .catch((e) => {
@@ -36,7 +52,7 @@ module.exports = function(PerformanceService, LoanService) {
       }
     ], (err, monthlyReturns) => {
       if (err) {
-        return res.status(404).send(err)
+        return res.status(403).send(err)
       }
       res.send(monthlyReturns)
     })
@@ -45,8 +61,8 @@ module.exports = function(PerformanceService, LoanService) {
   this.getRiskData = function(req, res) {
     const seriesNumber = req.params.seriesNumber
     PerformanceService.getMonthlyReturns(seriesNumber).then((returns) => {
-      if (!returns || !returns.length) {
-        return {}
+      if (returns.length === 0) {
+        return cb({msg: 'no monthly returns found'})
       }
       let stdev = PerformanceService.calculateStandardDeviation(returns)
       let maxmin = PerformanceService.getMaxMinReturns(returns)
@@ -64,6 +80,9 @@ module.exports = function(PerformanceService, LoanService) {
     async.waterfall([
       function(cb) {
         PerformanceService.getMonthlyData(seriesNumber).then((allMonthlyData) => {
+          if (allMonthlyData.length === 0) {
+            return cb({msg: 'no monthly reports found'})
+          }
           let monthlyReturns = PerformanceService.calcMonthlyReturns(allMonthlyData)
           let latestMonthlyReturn = monthlyReturns.pop()
           if (!latestMonthlyReturn) {
@@ -97,9 +116,14 @@ module.exports = function(PerformanceService, LoanService) {
         PerformanceService.calcDistributions(seriesNumber).then((total) => {
           result.totalReturnWithDistribution = result.totalReturn + total
           cb()
+        }).catch((e) => {
+          cb(e)
         })
       }
-    ], () => {
+    ], (err) => {
+      if (err) {
+        return res.status(403).send(err)
+      }
       res.send(result)
     })
   }

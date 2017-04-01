@@ -152,6 +152,9 @@ module.exports = function(TheoremBalanceSheetModel,
       },
       orderBy: 'period desc'
     }).then((balanceSheet) => {
+      if (!balanceSheet) {
+        return deferred.reject({msg: 'no balance sheet found'})
+      }
       TheoremIncomeStatementModel.findAll({
         where: {
           series_number: seriesNumber
