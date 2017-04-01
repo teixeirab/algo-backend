@@ -1,6 +1,7 @@
 'use strict'
 const async = require('async')
 const moment = require('moment')
+const _ = require('lodash')
 
 module.exports = function(PerformanceService) {
   const that = this
@@ -62,16 +63,18 @@ module.exports = function(PerformanceService) {
           if (!latestMonthlyReturn) {
             return cb()
           }
-          result.lastMonthReturn = latestMonthlyReturn.growth
+          result.lastMonthReturn = latestMonthlyReturn.monthlyReturn
 
           let allCumulativeReturns = PerformanceService.calcCumulativeReturns(allMonthlyData)
-          result.totalReturn = allCumulativeReturns.pop().cumulativeGrowth
+          result.totalReturn = allCumulativeReturns.pop().cumulativeReturn
 
           let currentYearMonthlyData = _.filter(allMonthlyData, (monthlyData) => {
-            return moment().startOf('year').isBefore(monthlyData)
+            return moment().startOf('year').isBefore(monthlyData.period)
           })
-          let currentYearCumulativeReturns = PerformanceService.calcCumulativeReturns(currentYearMonthlyData)
-          result.yearToDateReturn = currentYearCumulativeReturns.pop().cumulativeGrowth
+          if(currentYearMonthlyData.length > 1) {
+            let currentYearCumulativeReturns = PerformanceService.calcCumulativeReturns(currentYearMonthlyData)
+            result.yearToDateReturn = currentYearCumulativeReturns.pop().cumulativeReturn
+          }
           cb()
         })
       },
