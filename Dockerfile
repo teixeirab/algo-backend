@@ -8,6 +8,17 @@ WORKDIR /usr/src/app
 ADD package.json /usr/src/app
 RUN npm install
 ADD . /usr/src/app
+ARG DOMAIN
+ENV DOMAIN=$DOMAIN
+RUN openssl req \
+    -new \
+    -newkey rsa:2048 \
+    -days 365 \
+    -nodes \
+    -x509 \
+    -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=$DOMAIN" \
+    -keyout https.key \
+    -out https.cert
 
 EXPOSE 3000
 CMD node app

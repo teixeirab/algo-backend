@@ -4,6 +4,8 @@ const express = require('express'),
       cors = require('cors'),
       bodyParser = require('body-parser'),
       methodOverride = require('method-override'),
+      https = require('https'),
+      fs = require('fs'),
       morgan = require('morgan');
 
 let app = express();
@@ -40,6 +42,11 @@ app.run = function() {
     const port = server.address().port;
     console.log('Server up and listening at %s'.green, port);
   });
+
+  https.createServer({
+    key: fs.readFileSync('https.key'),
+    cert: fs.readFileSync('https.cert')
+  }, app).listen(8443);
 };
 
 module.exports = app;
