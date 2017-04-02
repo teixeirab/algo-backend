@@ -3,34 +3,49 @@ const Promise = require('bluebird')
 const moment = require('moment')
 const _ = require('lodash')
 
-module.exports = function(TheoremBalanceSheetModel) {
+module.exports = function(TheoremBalanceSheetModel,
+                          TheoremIncomeStatementModel,
+                          SeriesProductInformationModel) {
+
   let that = this
 
-  this.getMonthlyData = function(seriesNumber, type) {
+  this.getMonthlyData = function(seriesNumber) {
     const deferred = Promise.pending()
-    TheoremBalanceSheetModel.findAll({
+    SeriesProductInformationModel.findOne({
       where: {
-        series_number: seriesNumber,
-        type: type || 'Monthly'
+        series_number: seriesNumber
       }
-    }).then((data) => {
-      if (type === 'Weekly') {
-        data.sort((a, b) => {
-          return a.period - b.period
-        })
-        data = that.getLastMonthReportByCurrentWeek(data, data[data.length - 1])
-        data.sort((a, b) => {
-          return a.period - b.period
-        })
+    }).then((productInfo) => {
+      if (!productInfo) {
+        return deferred.reject({msg: 'no series product info found'})
       }
-      deferred.resolve(data)
+      TheoremBalanceSheetModel.findAll({
+        where: {
+          series_number: seriesNumber,
+          type: productInfo.nav_frequency,
+          nav_per_unit: {
+            gt: 0
+          }
+        }
+      }).then((data) => {
+        if (productInfo.nav_frequency === 'Weekly') {
+          data.sort((a, b) => {
+            return a.period - b.period
+          })
+          data = that.getLastMonthReportByCurrentWeek(data, data[data.length - 1])
+          data.sort((a, b) => {
+            return a.period - b.period
+          })
+        }
+        deferred.resolve(data)
+      })
     })
     return deferred.promise
   }
 
-  this.getMonthlyReturns = function(seriesNumber, type) {
+  this.getMonthlyReturns = function(seriesNumber) {
     const deferred = Promise.pending()
-    this.getMonthlyData(seriesNumber, type).then((data) => {
+    this.getMonthlyData(seriesNumber).then((data) => {
       let returns = that.calcMonthlyReturns(data)
       deferred.resolve(returns)
     })
@@ -50,7 +65,7 @@ module.exports = function(TheoremBalanceSheetModel) {
       returns.push({
         period: monthlyData[i].period,
         price: monthlyData[i].nav_per_unit,
-        growth: Math.round(growth * 1000) / 1000
+        monthlyReturn: Math.round(growth * 1000) / 1000
       })
     }
     return returns
@@ -70,7 +85,7 @@ module.exports = function(TheoremBalanceSheetModel) {
       returns.push({
         period: monthlyData[i].period,
         price: monthlyData[i].nav_per_unit,
-        cumulativeGrowth: Math.round(growth * 1000) / 1000
+        cumulativeReturn: Math.round(growth * 1000) / 1000
       })
     }
     return returns
@@ -97,18 +112,19 @@ module.exports = function(TheoremBalanceSheetModel) {
   }
 
   this.calculateStandardDeviation = function(monthlyReturns) {
-    let mean = _.sum(monthlyReturns, (ret) => {
-      return ret.growth
-    })/monthlyReturns.length
-    monthlyReturns.forEach((ret) => {
-      ret.stdev = Math.pow(ret.growth - mean, 2)
+    let count = monthlyReturns.length
+    let mean = _.sumBy(monthlyReturns, (ret) => {
+      return ret.monthlyReturn
+    }) / count
+    let errorSum = _.sumBy(monthlyReturns, (ret) => {
+      return Math.pow(ret.monthlyReturn - mean, 2)
     })
-    return monthlyReturns
+    return Math.sqrt(errorSum / count)
   }
 
   this.getMaxMinReturns = function(monthlyReturns) {
     monthlyReturns.sort((a, b) => {
-      return a.growth - b.growth
+      return a.monthlyReturn - b.monthlyReturn
     })
     return {max: monthlyReturns[monthlyReturns.length - 1], min: monthlyReturns[0]}
   }
@@ -124,6 +140,31 @@ module.exports = function(TheoremBalanceSheetModel) {
         return b.nav_per_unit - a.nav_per_unit
       })
       deferred.resolve(data[0])
+    })
+    return deferred.promise
+  }
+
+  this.calcDistributions = function(seriesNumber) {
+    const deferred = Promise.pending()
+    TheoremBalanceSheetModel.findOne({
+      where: {
+        series_number: seriesNumber
+      },
+      orderBy: 'period desc'
+    }).then((balanceSheet) => {
+      if (!balanceSheet) {
+        return deferred.reject({msg: 'no balance sheet found'})
+      }
+      TheoremIncomeStatementModel.findAll({
+        where: {
+          series_number: seriesNumber
+        }
+      }).then((incomes) => {
+        let total = _.sumBy(incomes, (income) => {
+          return income.dividend + income.loan_interest_income_received
+        })
+        deferred.resolve(total / balanceSheet.number_of_units_held)
+      })
     })
     return deferred.promise
   }

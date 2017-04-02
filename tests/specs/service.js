@@ -10,6 +10,7 @@ describe('service tests', function() {
   let vars = [
     'PerformanceService',
     'TheoremBalanceSheetModel',
+    'SeriesProductInformationModel',
     'FlexFundsDB'
   ]
   const formatDate = (date) => {
@@ -30,7 +31,10 @@ describe('service tests', function() {
     it('monthly returns based on monthly period', function (done) {
       const seriesNumber = 1
       helper.batchCreateInstances([
-        ['TheoremBalanceSheetModel',[
+        ['SeriesProductInformationModel', [
+          {nav_frequency: 'Monthly', series_number: 1, bloomberg_name: 'a', product_type: 'Fund', issue_date: new Date(), maturity_date: new Date(), region: 'South Cone', currency: 'USD'}
+        ]],
+        ['TheoremBalanceSheetModel', [
           {period: moment('2016-03-30'), series_number: 1, type: 'Monthly', nav_per_unit: 1},
           {period: moment('2016-04-30'), series_number: 1, type: 'Monthly', nav_per_unit: 1.1},
           {period: moment('2016-04-30'), series_number: 2, type: 'Monthly', nav_per_unit: 3},
@@ -48,6 +52,9 @@ describe('service tests', function() {
     it('monthly returns based on weekly period', function (done) {
       const seriesNumber = 1
       helper.batchCreateInstances([
+        ['SeriesProductInformationModel', [
+          {nav_frequency: 'Weekly', series_number: 1, bloomberg_name: 'a', product_type: 'Fund', issue_date: new Date(), maturity_date: new Date(), region: 'South Cone', currency: 'USD'}
+        ]],
         ['TheoremBalanceSheetModel',[
           {period: moment('2016-03-23'), series_number: 1, type: 'Weekly', nav_per_unit: 1},
           {period: moment('2016-03-30'), series_number: 1, type: 'Weekly', nav_per_unit: 1},
@@ -71,6 +78,29 @@ describe('service tests', function() {
           assert.equal(0.1, returns[0].growth)
           assert.equal(0.091, returns[1].growth)
           assert.equal(0.083, returns[2].growth)
+          done()
+        })
+      })
+    });
+    it('should filter out the zero nav reports', function (done) {
+      const seriesNumber = 1
+      helper.batchCreateInstances([
+        ['SeriesProductInformationModel', [
+          {nav_frequency: 'Monthly', series_number: 1, bloomberg_name: 'a', product_type: 'Fund', issue_date: new Date(), maturity_date: new Date(), region: 'South Cone', currency: 'USD'}
+        ]],
+        ['TheoremBalanceSheetModel', [
+          {period: moment('2016-02-28'), series_number: 1, type: 'Monthly', nav_per_unit: 0},
+          {period: moment('2016-03-30'), series_number: 1, type: 'Monthly', nav_per_unit: 1},
+          {period: moment('2016-04-30'), series_number: 1, type: 'Monthly', nav_per_unit: 1.1},
+          {period: moment('2016-04-30'), series_number: 2, type: 'Monthly', nav_per_unit: 3},
+          {period: moment('2016-05-30'), series_number: 1, type: 'Monthly', nav_per_unit: 1.21},
+          {period: moment('2016-06-28'), series_number: 1, type: 'Monthly', nav_per_unit: 0}
+        ]]
+      ], () => {
+        vars['PerformanceService'].getMonthlyReturns(seriesNumber, 'Monthly').then((returns) => {
+          assert.equal(2, returns.length)
+          assert.equal(0.1, returns[0].growth)
+          assert.equal(0.1, returns[1].growth)
           done()
         })
       })
