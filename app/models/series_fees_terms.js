@@ -36,7 +36,7 @@ module.exports = function(FlexFundsDB, Sequelize) {
       allowNull: true
     },
     external_offset: {
-      type: Sequelize.INTEGER(1),
+      type: Sequelize.ENUM('Yes','No'),
       allowNull: true
     }
   }, {

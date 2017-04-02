@@ -1,0 +1,54 @@
+-- INTERACTIVE BROKERS --
+select
+concat(t0.series_number, '-', account_id) as 'Account ID',
+security_id as 'Security ID',
+security_description as 'Description',
+symbol as 'Symbol',
+case when asset_type='STK' then 'EQUITY' when asset_type='BOND' then 'FIXED INCOME' when asset_type='OPT' then 'OPTION' when asset_type='FUT' then 'FUTURES' else asset_type end as 'Asset Type',
+quantity as 'Quantity',
+gross_amount as 'Total Value',
+t1.currency as 'Currency',
+trade_date as 'Trade Date'
+from series_product_information t0,
+ib_activity t1
+where account_number = account_id
+and series_number = '{param0}'
+
+Union
+
+-- PERSHING --
+select
+concat(t0.series_number, '-', t1.account) as 'Account ID',
+case when locate('ISIN', t1.description)  > 0 then substring(t1.description, locate('ISINcas', t1.description) + 5, 12) else t1.cusip end as 'Security ID',
+cast(t1.description as char(45)) as 'Description',
+t1.security_id as 'Symbol',
+case when t2.asset_classification='CASH, MONEY FUNDS, BANK DEPOSITS' then 'CASH' when t2.asset_classification='MUTUAL FUND' then 'EQUITY' else t2.asset_classification end as 'Asset Type',
+t1.quantity as 'Quantity',
+t1.net_amount as 'Total Value',
+'USD' as 'Currency',
+t1.trade_date as 'Trade Date'
+from series_product_information t0,
+pershing_trades t1,
+pershing_positions t2
+where t1.account = t0.account_number
+and t1.cusip = t2.cusip
+and t1.account = t2.account_number
+and series_number = '{param0}'
+and t1.cusip not in ('USD999997')
+
+Union
+-- CITIBANK --
+select
+concat(t0.series_number, '-', t1.account_id) as 'Account ID',
+t1.isin as 'Security ID',
+t1.issue_name as 'Description',
+t1.sec_id as 'Symbol',
+case when t2.isin is null then 'EQUITY' else 'FIXED INCOME' end as 'Asset Type',
+t1.setltement_amount / t1.settled_quantity as 'Price',
+t1.setltement_amount as 'Total Value',
+t1.currency as 'Currency',
+t1.trade_date as 'Trade Date'
+from series_product_information t0,
+citi_all_transactions t1 left outer join citi_fixed_income_settled_position t2 on (t1.account_id = t2.account_id and t1.isin = t2.isin)
+where t1.account_id = t0.account_number
+and series_number = '{param0}';

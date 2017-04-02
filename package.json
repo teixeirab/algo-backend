@@ -28,7 +28,13 @@
     "sequelize": "^3.30.2",
     "summonjs": "^0.3.7"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "gulp": "^3.9.1",
+    "gulp-exit": "0.0.2",
+    "gulp-mocha": "^4.2.0",
+    "gulp-util": "^3.0.6",
+    "sqlite3": "^3.1.8"
+  },
   "bundleDependencies": [],
   "private": true,
   "main": "server.js"

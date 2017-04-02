@@ -16,7 +16,7 @@ module.exports = function(app, DataController, UserController) {
   app.route("/api/panel/sql/delete/:table/:id/:pk").get(UserController.auth, DataController.deleteOne);
   app.route("/api/panel/sql/:table").post(UserController.auth, DataController.addOne);
   app.route("/api/panel/sql/:table/:pk/:id").put(UserController.auth, DataController.editOne);
-  app.route("/api/panel/options/:selectType/:table").get(UserController.auth, DataController.findOptions);
+  app.route("/api/panel/options/:selectType/:table/:query_name").get(UserController.auth, DataController.findOptions);
   app.route("/api/prices/:series_number/:settlement_date").get(DataController.getPrice);
 
   return this

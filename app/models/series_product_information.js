@@ -58,6 +58,14 @@ module.exports = function(FlexFundsDB, Sequelize) {
     valuation_frequency: {
       type: Sequelize.TEXT,
       allowNull: true
+    },
+    shares: {
+      type: Sequelize.TEXT,
+      allowNull: true
+    },
+    type_of_subscription: {
+      type: Sequelize.TEXT,
+      allowNull: true
     }
   }, {
     tableName: 'series_product_information'

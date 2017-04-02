@@ -34,6 +34,7 @@
         "CommonService": "./services/common",
         "SqlService": "./services/sql",
         "MailService": "./services/mail",
+        "PerformanceService": "./services/performance",
 
         "UserController": "./controllers/user",
         "DataController": "./controllers/data",

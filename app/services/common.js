@@ -53,10 +53,10 @@ module.exports = function(app, DependConfigs) {
     const model = this.getModel(table)
     let opts = {where: {}}
     opts.where[pk] = value
+    console.log(opts)
     return model.findOne(opts).then((obj) => {
       return obj.update(row)
     })
   }
-
   return this
 }

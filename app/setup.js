@@ -48,5 +48,4 @@ app.run = function() {
     cert: fs.readFileSync('https.cert')
   }, app).listen(8443);
 };
-
 module.exports = app;
