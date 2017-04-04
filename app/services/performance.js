@@ -28,15 +28,6 @@ module.exports = function(TheoremBalanceSheetModel,
           }
         }
       }).then((data) => {
-        if (productInfo.nav_frequency === 'Weekly') {
-          data.sort((a, b) => {
-            return a.period - b.period
-          })
-          data = that.getLastMonthReportByCurrentWeek(data, data[data.length - 1])
-          data.sort((a, b) => {
-            return a.period - b.period
-          })
-        }
         deferred.resolve(data)
       })
     })
@@ -57,11 +48,21 @@ module.exports = function(TheoremBalanceSheetModel,
       return a.period - b.period
     })
     let returns = []
+    let isWeekly = monthlyData.length > 0 && monthlyData[0].type === 'Weekly'
     for (let i = 0; i < monthlyData.length; i++) {
       if (i === 0){
+        returns.push({
+          period: monthlyData[i].period,
+          price: monthlyData[i].nav_per_unit,
+          monthlyReturn: 0
+        })
         continue
       }
-      let growth = monthlyData[i].nav_per_unit / monthlyData[i - 1].nav_per_unit - 1
+      let lastMonthReport = monthlyData[i - 1]
+      if (isWeekly) {
+        lastMonthReport = this.getLastMonthReportByCurrentWeek(monthlyData, monthlyData[i])
+      }
+      let growth = monthlyData[i].nav_per_unit / lastMonthReport.nav_per_unit - 1
       returns.push({
         period: monthlyData[i].period,
         price: monthlyData[i].nav_per_unit,
@@ -91,14 +92,13 @@ module.exports = function(TheoremBalanceSheetModel,
     return returns
   }
 
-  this.getLastMonthReportByCurrentWeek = function(weeks, currentWeek, monthlyData) {
-    monthlyData = monthlyData || [currentWeek]
+  this.getLastMonthReportByCurrentWeek = function(weeks, currentWeek) {
     let lastMonth = moment(currentWeek.period).subtract(1, 'month')
     weeks = _.filter(weeks, (week) => {
       return moment(week.period).isBefore(moment(lastMonth).add(3, 'day'))
     })
     if (weeks.length === 0) {
-      return monthlyData
+      return currentWeek
     }
     weeks.sort((a, b) => {
       let atime = a.period.getTime()
@@ -107,8 +107,7 @@ module.exports = function(TheoremBalanceSheetModel,
       return Math.abs(atime - lastMonthTime) - Math.abs(btime - lastMonthTime)
     })
     let lastMonthWeek = weeks[0]
-    monthlyData.push(lastMonthWeek)
-    return this.getLastMonthReportByCurrentWeek(weeks, lastMonthWeek, monthlyData)
+    return lastMonthWeek
   }
 
   this.calculateStandardDeviation = function(monthlyReturns) {

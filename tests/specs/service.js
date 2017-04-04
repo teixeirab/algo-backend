@@ -42,9 +42,10 @@ describe('service tests', function() {
         ]]
       ], () => {
         vars['PerformanceService'].getMonthlyReturns(seriesNumber).then((returns) => {
-          assert.equal(2, returns.length)
-          assert.equal(0.1, returns[0].monthlyReturn)
+          assert.equal(3, returns.length)
+          assert.equal(0, returns[0].monthlyReturn)
           assert.equal(0.1, returns[1].monthlyReturn)
+          assert.equal(0.1, returns[2].monthlyReturn)
           done()
         })
       })
@@ -74,10 +75,15 @@ describe('service tests', function() {
         ]]
       ], () => {
         vars['PerformanceService'].getMonthlyReturns(seriesNumber).then((returns) => {
-          assert.equal(3, returns.length)
-          assert.equal(0.1, returns[0].monthlyReturn)
-          assert.equal(0.091, returns[1].monthlyReturn)
-          assert.equal(0.083, returns[2].monthlyReturn)
+          assert.equal(15, returns.length)
+          assert.equal(0, returns[0].monthlyReturn)
+          assert.equal(0, returns[1].monthlyReturn)
+          assert.equal(0, returns[2].monthlyReturn)
+          assert.equal(0, returns[3].monthlyReturn)
+          assert.equal(0.21, returns[4].monthlyReturn)
+          assert.equal(0.1, returns[5].monthlyReturn)
+          assert.equal(0.1, returns[6].monthlyReturn)
+          assert.equal(0, returns[7].monthlyReturn)
           done()
         })
       })
@@ -98,9 +104,10 @@ describe('service tests', function() {
         ]]
       ], () => {
         vars['PerformanceService'].getMonthlyReturns(seriesNumber).then((returns) => {
-          assert.equal(2, returns.length)
-          assert.equal(0.1, returns[0].monthlyReturn)
+          assert.equal(3, returns.length)
+          assert.equal(0, returns[0].monthlyReturn)
           assert.equal(0.1, returns[1].monthlyReturn)
+          assert.equal(0.1, returns[2].monthlyReturn)
           done()
         })
       })
