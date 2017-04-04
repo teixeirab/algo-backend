@@ -55,7 +55,7 @@ from
 				from citi_all_transactions t4
                 group by isin) t4
                 on (t0.isin = t4.isin)
-where t1.product_type = 'Loan'
+where t1.product_type in ('Loan', Hybrid)
 and (closing > 0 or opening > 0)
 group by t1.series_number, t1.currency, t2.total_equity, interest_type, interest_rate, coupon_frequency
 order by t0.series_number asc;

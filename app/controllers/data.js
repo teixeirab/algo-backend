@@ -1,11 +1,10 @@
 module.exports = function(CommonService, SqlService) {
 
   this.findAll = function(req, res) {
-    const table = req.params.table
+    const table = req.params.table;
     CommonService.find(table).then((rows) => {
       res.send(rows)
     }).catch((err) => {
-      console.log(err)
       res.status(400).send(err)
     })
   }
