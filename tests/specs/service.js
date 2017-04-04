@@ -41,7 +41,7 @@ describe('service tests', function() {
           {period: moment('2016-05-30'), series_number: 1, type: 'Monthly', nav_per_unit: 1.21}
         ]]
       ], () => {
-        vars['PerformanceService'].getMonthlyReturns(seriesNumber, 'Monthly').then((returns) => {
+        vars['PerformanceService'].getMonthlyReturns(seriesNumber).then((returns) => {
           assert.equal(2, returns.length)
           assert.equal(0.1, returns[0].monthlyReturn)
           assert.equal(0.1, returns[1].monthlyReturn)
@@ -73,7 +73,7 @@ describe('service tests', function() {
           {period: moment('2016-06-30'), series_number: 1, type: 'Weekly', nav_per_unit: 1.3}
         ]]
       ], () => {
-        vars['PerformanceService'].getMonthlyReturns(seriesNumber, 'Weekly').then((returns) => {
+        vars['PerformanceService'].getMonthlyReturns(seriesNumber).then((returns) => {
           assert.equal(3, returns.length)
           assert.equal(0.1, returns[0].monthlyReturn)
           assert.equal(0.091, returns[1].monthlyReturn)
@@ -97,7 +97,7 @@ describe('service tests', function() {
           {period: moment('2016-06-28'), series_number: 1, type: 'Monthly', nav_per_unit: 0}
         ]]
       ], () => {
-        vars['PerformanceService'].getMonthlyReturns(seriesNumber, 'Monthly').then((returns) => {
+        vars['PerformanceService'].getMonthlyReturns(seriesNumber).then((returns) => {
           assert.equal(2, returns.length)
           assert.equal(0.1, returns[0].monthlyReturn)
           assert.equal(0.1, returns[1].monthlyReturn)
