@@ -80,6 +80,11 @@ module.exports = function(TheoremBalanceSheetModel,
     let firstNav = monthlyData[0].nav_per_unit
     for (let i = 0; i < monthlyData.length; i++) {
       if (i === 0){
+        returns.push({
+          period: monthlyData[i].period,
+          price: monthlyData[i].nav_per_unit,
+          cumulativeReturn: 0
+        })
         continue
       }
       let growth = monthlyData[i].nav_per_unit / firstNav - 1
