@@ -1,0 +1,69 @@
+-- ISIN --
+
+select
+account_id as 'Series Number',
+security_description as 'Sedol/Cusip/Internal',
+opening_position as 'Opening Position',
+purchases as 'Transactions - Purchases',
+sales as 'Transactions - Sales',
+closing_position as 'Closing Position',
+market_price_at_quarter_end as 'Market price at quarter-end',
+yield as 'Yield',
+maturity_date as 'Maturity date',
+original_maturity as 'Original maturity',
+country as 'Country',
+sector as 'Sector'
+
+from (
+-- PERSHING --
+select
+distinct(substring(t1.description, locate('ISIN', t1.description) + 5, 12)) security_description,
+account account_id,
+t2_bq.market_value opening_position,
+sum(case when t1.net_amount < 0 then abs(t1.net_amount) else 0 end) purchases,
+sum(case when t1.net_amount > 0 then abs(t1.net_amount) else 0 end) sales,
+t2_eq.market_value closing_position,
+t2_eq.price market_price_at_quarter_end,
+0 yield,
+0 maturity_date,
+0 original_maturity,
+0 country,
+0 sector
+from series_product_information t0,
+pershing_trades t1
+left outer join pershing_positions t2_bq on (t1.account = t2_bq.account_number and t1.security_id = t2_bq.security_id and t2_bq.period in ('2017-01-03'))
+left outer join pershing_positions t2_eq on (t1.account = t2_eq.account_number and t1.security_id = t2_eq.security_id and t2_eq.period in ('2017-04-03'))
+where t0.account_number = t1.account
+and (t2_bq.asset_classification='FIXED INCOME' or t2_eq.asset_classification='FIXED INCOME')
+and settlement_date > '2017-01-03'
+and locate('ISIN', t1.description)  > 0
+group by security_description, account_id, opening_position, closing_position, market_price_at_quarter_end, yield, maturity_date, original_maturity, country, sector
+
+UNION
+-- CITIBANK --
+select
+distinct(t1.isin) security_description,
+t1.account_id account_id,
+t2_bq.market_value opening_position,
+sum(case when t1.transaction_type in ('RVP', 'RF') then abs(t1.setltement_amount) else 0 end) purchases,
+sum(case when t1.transaction_type in ('DVP', 'DF') then abs(t1.setltement_amount) else 0 end)  sales,
+t2_eq.market_value closing_position,
+t2_eq.market_value market_price_at_quarter_end,
+0 yield,
+0 maturity_date,
+0 original_maturity,
+0 country,
+0 sector
+from series_product_information t0,
+citi_all_transactions t1
+left outer join (select f.*, v.market_value from citi_fixed_income_settled_position f, citi_positions_valuations v where f.account_id = v.account_id and f.isin= v.isin and f.as_of_date = v.as_of_date)
+	t2_bq on (t1.account_id = t2_bq.account_id and t1.isin = t2_bq.isin and t2_bq.as_of_date in ('2017-01-03'))
+left outer join (select f.*, v.market_value from citi_fixed_income_settled_position f, citi_positions_valuations v where f.account_id = v.account_id and f.isin= v.isin and f.as_of_date = v.as_of_date)
+	t2_eq on (t1.account_id = t2_bq.account_id and t1.isin = t2_bq.isin and t2_bq.as_of_date in ('2017-04-03'))
+where 1=1
+and t1.settlement_date > '2017-01-03'
+and t1.account_id not in ('6017709722')
+group by security_description, account_id, opening_position, closing_position, market_price_at_quarter_end, yield, maturity_date, original_maturity, country, sector
+order by closing_position
+
+) a

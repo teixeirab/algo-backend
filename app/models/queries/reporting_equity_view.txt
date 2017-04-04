@@ -1,0 +1,69 @@
+-- EQUITY --
+select
+
+custody_account_provider as 'Custody Account Provider',
+account_id as 'Account ID',
+opening_position as 'Opening Position',
+purchases as 'Transactions - Purchases',
+sales as 'Transactions - Sales',
+closing_position as 'Closing Position'
+
+from (
+
+-- Interactive Brokers --
+select
+'Interactive Brokers' custody_account_provider,
+t1.account_id account_id,
+sum(t2_bq.market_value) opening_position,
+sum(case when t1.gross_amount < 0 then abs(t1.gross_amount) else 0 end) purchases,
+sum(case when t1.gross_amount > 0 then abs(t1.gross_amount) else 0 end) sales,
+sum(t2_eq.market_value) closing_position
+from series_product_information t0,
+ib_activity t1
+left outer join ib_positions t2_bq on (t1.account_id = t2_bq.account_id and t1.security_id = t2_bq.security_id and t2_bq.report_date in ('2017-01-29'))
+left outer join ib_positions t2_eq on (t1.account_id = t2_eq.account_id and t1.security_id = t2_eq.security_id and t2_eq.report_date in ('2017-03-22'))
+where t0.account_number = t1.account_id
+and t1.asset_type='STK'
+and settle_date > '2017-01-29'
+group by custody_account_provider, account_id
+
+Union
+
+-- Citibank --
+select
+'Citibank' custody_account_provider,
+t1.account_id account_id,
+sum(t2_bq.market_value) opening_position,
+sum(case when t1.transaction_type in ('RVP', 'RF') then abs(t1.setltement_amount) else 0 end) purchases,
+sum(case when t1.transaction_type in ('DVP', 'DF') then abs(t1.setltement_amount) else 0 end)  sales,
+sum(t2_eq.market_value) closing_position
+from series_product_information t0,
+citi_all_transactions t1
+left outer join (select v.* from citi_positions_valuations v where v.isin not in (select isin from citi_fixed_income_settled_position))
+	t2_bq on (t1.account_id = t2_bq.account_id and t1.isin = t2_bq.isin and t2_bq.as_of_date in ('2017-01-03'))
+left outer join (select v.* from citi_positions_valuations v where v.isin not in (select isin from citi_fixed_income_settled_position))
+	t2_eq on (t1.account_id = t2_bq.account_id and t1.isin = t2_bq.isin and t2_bq.as_of_date in ('2017-04-03'))
+where 1=1
+and t1.settlement_date > '2017-01-03'
+and t1.account_id not in ('6017709722')
+group by custody_account_provider, account_id
+
+Union
+-- Pershing --
+select
+'Pershing' custody_account_provider,
+account account_id,
+sum(t2_bq.market_value) opening_position,
+sum(case when t1.net_amount < 0 then abs(t1.net_amount) else 0 end) purchases,
+sum(case when t1.net_amount > 0 then abs(t1.net_amount) else 0 end) sales,
+sum(t2_eq.market_value) closing_position
+from series_product_information t0,
+pershing_trades t1
+left outer join pershing_positions t2_bq on (t1.account = t2_bq.account_number and t1.security_id = t2_bq.security_id and t2_bq.period in ('2017-01-03'))
+left outer join pershing_positions t2_eq on (t1.account = t2_eq.account_number and t1.security_id = t2_eq.security_id and t2_eq.period in ('2017-04-03'))
+where t0.account_number = t1.account
+and (t2_bq.asset_classification in ('EQUITY', 'MUTUAL FUND') or t2_eq.asset_classification in ('EQUITY', 'MUTUAL FUND'))
+and settlement_date > '2017-01-03'
+group by custody_account_provider, account_id
+
+) a
