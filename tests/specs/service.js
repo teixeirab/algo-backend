@@ -41,10 +41,11 @@ describe('service tests', function() {
           {period: moment('2016-05-30'), series_number: 1, type: 'Monthly', nav_per_unit: 1.21}
         ]]
       ], () => {
-        vars['PerformanceService'].getMonthlyReturns(seriesNumber, 'Monthly').then((returns) => {
-          assert.equal(2, returns.length)
-          assert.equal(0.1, returns[0].growth)
-          assert.equal(0.1, returns[1].growth)
+        vars['PerformanceService'].getMonthlyReturns(seriesNumber).then((returns) => {
+          assert.equal(3, returns.length)
+          assert.equal(0, returns[0].monthlyReturn)
+          assert.equal(0.1, returns[1].monthlyReturn)
+          assert.equal(0.1, returns[2].monthlyReturn)
           done()
         })
       })
@@ -73,11 +74,16 @@ describe('service tests', function() {
           {period: moment('2016-06-30'), series_number: 1, type: 'Weekly', nav_per_unit: 1.3}
         ]]
       ], () => {
-        vars['PerformanceService'].getMonthlyReturns(seriesNumber, 'Weekly').then((returns) => {
-          assert.equal(3, returns.length)
-          assert.equal(0.1, returns[0].growth)
-          assert.equal(0.091, returns[1].growth)
-          assert.equal(0.083, returns[2].growth)
+        vars['PerformanceService'].getMonthlyReturns(seriesNumber).then((returns) => {
+          assert.equal(15, returns.length)
+          assert.equal(0, returns[0].monthlyReturn)
+          assert.equal(0, returns[1].monthlyReturn)
+          assert.equal(0, returns[2].monthlyReturn)
+          assert.equal(0, returns[3].monthlyReturn)
+          assert.equal(0.21, returns[4].monthlyReturn)
+          assert.equal(0.1, returns[5].monthlyReturn)
+          assert.equal(0.1, returns[6].monthlyReturn)
+          assert.equal(0, returns[7].monthlyReturn)
           done()
         })
       })
@@ -97,10 +103,11 @@ describe('service tests', function() {
           {period: moment('2016-06-28'), series_number: 1, type: 'Monthly', nav_per_unit: 0}
         ]]
       ], () => {
-        vars['PerformanceService'].getMonthlyReturns(seriesNumber, 'Monthly').then((returns) => {
-          assert.equal(2, returns.length)
-          assert.equal(0.1, returns[0].growth)
-          assert.equal(0.1, returns[1].growth)
+        vars['PerformanceService'].getMonthlyReturns(seriesNumber).then((returns) => {
+          assert.equal(3, returns.length)
+          assert.equal(0, returns[0].monthlyReturn)
+          assert.equal(0.1, returns[1].monthlyReturn)
+          assert.equal(0.1, returns[2].monthlyReturn)
           done()
         })
       })
