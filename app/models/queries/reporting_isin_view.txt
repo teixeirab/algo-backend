@@ -1,7 +1,8 @@
 -- ISIN --
 
 select
-account_id as 'Series Number',
+series_number as 'Series Number',
+account_id as 'Account Number',
 security_description as 'Sedol/Cusip/Internal',
 opening_position as 'Opening Position',
 purchases as 'Transactions - Purchases',
@@ -18,6 +19,7 @@ from (
 -- PERSHING --
 select
 distinct(substring(t1.description, locate('ISIN', t1.description) + 5, 12)) security_description,
+t0.series_number,
 account account_id,
 t2_bq.market_value opening_position,
 sum(case when t1.net_amount < 0 then abs(t1.net_amount) else 0 end) purchases,

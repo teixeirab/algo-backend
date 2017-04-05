@@ -1,7 +1,7 @@
 select series_number 'Series Number',
 	nominal_issued 'Nominal Issued',
     nominal_outstanding 'Nominal Outstanding',
-    nominal_issued - nominal_outstanding 'Inventory',
+    nominal_issued - nominal_outstanding - redemptions 'Inventory',
     settlement_amount 'Cash Received',
     number_of_transactions 'Number of Transactions'
 from (
@@ -15,14 +15,14 @@ SELECT
         (SUM((CASE
             WHEN (`t0`.`transaction_type` = 'DVP') THEN `t0`.`settled_quantity`
             WHEN (`t0`.`transaction_type` = 'RVP') THEN -(`t0`.`settled_quantity`)
-            WHEN (`t0`.`transaction_type` = 'DF') THEN `t0`.`settled_quantity`
+            WHEN (`t0`.`transaction_type` = 'DF' and counterparty != 'EUROCLEAR 21235') THEN `t0`.`settled_quantity`
             ELSE 0
         END))) AS nominal_outstanding,
-        -- nominal_issued - nominal_outstanding nominal_inventory,
+        sum(case when (`t0`.`transaction_type` = 'DF' and counterparty = 'EUROCLEAR 21235') then `t0`.`settled_quantity` else 0 end) redemptions,
 		(SUM((CASE
             WHEN (`t0`.`transaction_type` = 'DVP') THEN `t0`.`setltement_amount`
             WHEN (`t0`.`transaction_type` = 'RVP') THEN -(`t0`.`setltement_amount`)
-            WHEN (`t0`.`transaction_type` = 'DF') THEN `t0`.`setltement_amount`
+            WHEN (`t0`.`transaction_type` = 'DF' and counterparty != 'EUROCLEAR 21235') THEN `t0`.`setltement_amount`
             ELSE 0
         END))) AS settlement_amount,
         COUNT(1) AS number_of_transactions
@@ -34,6 +34,6 @@ SELECT
         (CONVERT( `t0`.`isin` USING UTF8) = `t1`.`isin`)
         and account_id = '6017709722'
         and t1.status = 'A'
-        and t0.settlement_date < '{param0}'
+        and t0.settlement_date < '{param0} '
 	group by t2.series_number
 ) a;
