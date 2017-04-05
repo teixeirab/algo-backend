@@ -42,10 +42,12 @@ app.run = function() {
     const port = server.address().port;
     console.log('Server up and listening at %s'.green, port);
   });
-
-  https.createServer({
-    key: fs.readFileSync('https.key'),
-    cert: fs.readFileSync('https.cert')
-  }, app).listen(8443);
+  if (process.env.HTTPS) {
+    https.createServer({
+      key: fs.readFileSync('./ssl/server-key.pem'),
+      cert: fs.readFileSync('./ssl/server-crt.pem'),
+      ca: fs.readFileSync('./ssl/ca-crt.pem')
+    }, app).listen(8443);
+  }
 };
 module.exports = app;
