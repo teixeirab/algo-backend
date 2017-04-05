@@ -2,7 +2,7 @@
 const crypto = require('crypto');
 const moment = require('moment')
 
-module.exports = function(UsersModel, Utils, MailService) {
+module.exports = function(Configs, UsersModel, Utils, MailService) {
   const that = this
   this.refreshAPIKey = function(str) {
     return crypto.createHash('sha1').update(str).digest('hex');
@@ -47,6 +47,14 @@ module.exports = function(UsersModel, Utils, MailService) {
         next()
       })
     })
+  }
+
+  this.internalAuth = function(req, res, next) {
+    const internalKey = req.get('internal-key')
+    if (Configs.internalKey !== internalKey) {
+      return res.status(401).send()
+    }
+    next()
   }
 
   this.getUser = function(req, res) {
