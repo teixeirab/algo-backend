@@ -93,6 +93,16 @@ module.exports = function(FlexFundsDB, Sequelize, SeriesNamesModel) {
       allowNull: false,
       defaultValue: "0"
     },
+    subscription_fee: {
+      type: "DOUBLE",
+      allowNull: true,
+      defaultValue: "0"
+    },
+    accrued_interest: {
+      type: "DOUBLE",
+      allowNull: true,
+      defaultValue: "0"
+    },
     dt_added: {
       type: Sequelize.DATE,
       allowNull: false,
