@@ -1,0 +1,1 @@
+select * from quarterly_reporting_setup where id = 0;

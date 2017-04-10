@@ -29,13 +29,13 @@ t2_eq.market_price market_price_at_quarter_end,
 0 original_maturity,
 0 country,
 0 sector
-from series_product_information t0,
-ib_activity t1
-left outer join ib_positions t2_bq on (t1.account_id = t2_bq.account_id and t1.security_id = t2_bq.security_id and t2_bq.report_date in ('2017-01-29'))
-left outer join ib_positions t2_eq on (t1.account_id = t2_eq.account_id and t1.security_id = t2_eq.security_id and t2_eq.report_date in ('2017-03-22'))
-where t0.account_number = t1.account_id
+from series_product_information t0
+join ib_activity t1 on ((locate(t1.account_id, t0.account_number) > 0))
+left outer join ib_positions t2_bq on (t1.account_id = t2_bq.account_id and t1.security_id = t2_bq.security_id and t2_bq.report_date in ((select ib_start_date from quarterly_reporting_setup where id = 0)))
+left outer join ib_positions t2_eq on (t1.account_id = t2_eq.account_id and t1.security_id = t2_eq.security_id and t2_eq.report_date in ((select ib_end_date from quarterly_reporting_setup where id = 0)))
+where 1=1
 and t1.asset_type='BOND'
-and settle_date > '2017-01-29'
+and settle_date > ((select ib_start_date from quarterly_reporting_setup where id = 0))
 group by security_description,  account_id, opening_position, closing_position, market_price_at_quarter_end, yield, maturity_date, original_maturity, country, sector
 
 Union
@@ -53,13 +53,13 @@ t2_eq.price market_price_at_quarter_end,
 0 original_maturity,
 0 country,
 0 sector
-from series_product_information t0,
-pershing_trades t1
-left outer join pershing_positions t2_bq on (t1.account = t2_bq.account_number and t1.security_id = t2_bq.security_id and t2_bq.period in ('2017-01-03'))
-left outer join pershing_positions t2_eq on (t1.account = t2_eq.account_number and t1.security_id = t2_eq.security_id and t2_eq.period in ('2017-04-03'))
-where t0.account_number = t1.account
+from series_product_information t0
+join pershing_trades t1 on ((locate(t1.account, t0.account_number) > 0))
+left outer join pershing_positions t2_bq on (t1.account = t2_bq.account_number and t1.security_id = t2_bq.security_id and t2_bq.period in ((select pershing_start_date from quarterly_reporting_setup where id = 0)))
+left outer join pershing_positions t2_eq on (t1.account = t2_eq.account_number and t1.security_id = t2_eq.security_id and t2_eq.period in ((select pershing_end_date from quarterly_reporting_setup where id = 0)))
+where 1=1
 and (t2_bq.asset_classification='FIXED INCOME' or t2_eq.asset_classification='FIXED INCOME')
-and settlement_date > '2017-01-03'
+and settlement_date > ((select pershing_start_date from quarterly_reporting_setup where id = 0))
 and locate('ISIN', t1.description)  <= 0
 group by security_description, account_id, opening_position, closing_position, market_price_at_quarter_end, yield, maturity_date, original_maturity, country, sector
 order by closing_position

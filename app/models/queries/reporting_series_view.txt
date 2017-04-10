@@ -11,7 +11,15 @@ t1.issue_date 'Issue Date',
 t1.custodian 'Custodian',
 t1.account_number 'Account Number'
 from
-(select distinct(series_number) series_number, series_name from series_names) t0
+(select distinct(series_number) series_number, series_name, status from series_names) t0
 				join series_product_information t1 on (t0.series_number = t1.series_number)
-				left outer join theorem_balance_sheet t2 on (t1.series_number = t2.series_number and t2.period = '{param0}')
+				left outer join theorem_balance_sheet t2 on
+				(t1.series_number = t2.series_number and t2.period in
+				        (
+				        (select navs_monthly_end_date from quarterly_reporting_setup where id = 0),
+				        (select navs_weekly_end_date from quarterly_reporting_setup where id = 0)
+				        )
+				)
+where t0.status = 'A'
+and t2.total_equity != 0
 order by t0.series_number asc;
