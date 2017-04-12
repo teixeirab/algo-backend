@@ -2,13 +2,13 @@ SELECT
 		t2.region,
         t2.product_type,
         (SUM((CASE
-            WHEN (`t0`.`transaction_type` = 'RF') THEN `t0`.`settled_quantity`
+            WHEN (`t0`.`transaction_type` = 'RF' and counterparty != 'EUROCLEAR 21235' and locate('CAEV/PARI', counterparty) = 0) THEN `t0`.`settled_quantity`
             ELSE 0
         END)) / 1000000) AS `nominal_issued`,
         (SUM((CASE
             WHEN (`t0`.`transaction_type` = 'DVP') THEN `t0`.`settled_quantity`
             WHEN (`t0`.`transaction_type` = 'RVP') THEN -(`t0`.`settled_quantity`)
-            WHEN (`t0`.`transaction_type` = 'DF') THEN `t0`.`settled_quantity`
+            WHEN (`t0`.`transaction_type` = 'DF' and counterparty != 'EUROCLEAR 21235' and locate('CAEV/PARI', counterparty) = 0) THEN `t0`.`settled_quantity`
             ELSE 0
         END)) / 1000000) AS `total_nav`,
         COUNT(DISTINCT `t1`.`series_number`) AS `series_issued`,
@@ -28,13 +28,13 @@ SELECT
 		t2.region,
         'All' product_type,
         (SUM((CASE
-            WHEN (`t0`.`transaction_type` = 'RF') THEN `t0`.`settled_quantity`
+            WHEN (`t0`.`transaction_type` = 'RF' and counterparty != 'EUROCLEAR 21235' and locate('CAEV/PARI', counterparty) = 0) THEN `t0`.`settled_quantity`
             ELSE 0
         END)) / 1000000) AS `nominal_issued`,
         (SUM((CASE
             WHEN (`t0`.`transaction_type` = 'DVP') THEN `t0`.`settled_quantity`
             WHEN (`t0`.`transaction_type` = 'RVP') THEN -(`t0`.`settled_quantity`)
-            WHEN (`t0`.`transaction_type` = 'DF') THEN `t0`.`settled_quantity`
+            WHEN (`t0`.`transaction_type` = 'DF' and counterparty != 'EUROCLEAR 21235' and locate('CAEV/PARI', counterparty) = 0) THEN `t0`.`settled_quantity`
             ELSE 0
         END)) / 1000000) AS `total_nav`,
         COUNT(DISTINCT `t1`.`series_number`) AS `series_issued`,
@@ -53,13 +53,13 @@ SELECT
 		'Total' region,
          t2.product_type,
         (SUM((CASE
-            WHEN (`t0`.`transaction_type` = 'RF') THEN `t0`.`settled_quantity`
+            WHEN (`t0`.`transaction_type` = 'RF' and counterparty != 'EUROCLEAR 21235' and locate('CAEV/PARI', counterparty) = 0) THEN `t0`.`settled_quantity`
             ELSE 0
         END)) / 1000000) AS `nominal_issued`,
         (SUM((CASE
             WHEN (`t0`.`transaction_type` = 'DVP') THEN `t0`.`settled_quantity`
             WHEN (`t0`.`transaction_type` = 'RVP') THEN -(`t0`.`settled_quantity`)
-            WHEN (`t0`.`transaction_type` = 'DF') THEN `t0`.`settled_quantity`
+            WHEN (`t0`.`transaction_type` = 'DF' and counterparty != 'EUROCLEAR 21235' and locate('CAEV/PARI', counterparty) = 0) THEN `t0`.`settled_quantity`
             ELSE 0
         END)) / 1000000) AS `total_nav`,
         COUNT(DISTINCT `t1`.`series_number`) AS `series_issued`,
@@ -84,7 +84,7 @@ SELECT
         (SUM((CASE
             WHEN (`t0`.`transaction_type` = 'DVP') THEN `t0`.`settled_quantity`
             WHEN (`t0`.`transaction_type` = 'RVP') THEN -(`t0`.`settled_quantity`)
-            WHEN (`t0`.`transaction_type` = 'DF') THEN `t0`.`settled_quantity`
+            WHEN (`t0`.`transaction_type` = 'DF' and counterparty != 'EUROCLEAR 21235' and locate('CAEV/PARI', counterparty) = 0) THEN `t0`.`settled_quantity`
             ELSE 0
         END)) / 1000000) AS `total_nav`,
         COUNT(DISTINCT `t1`.`series_number`) AS `series_issued`,

@@ -3,26 +3,27 @@ select series_number 'Series Number',
     nominal_outstanding 'Nominal Outstanding',
     nominal_issued - nominal_outstanding - redemptions 'Inventory',
     settlement_amount 'Cash Received',
-    number_of_transactions 'Number of Transactions'
+    number_of_transactions 'Number of Transactions',
+    coalesce(nominal_outstanding / (nominal_outstanding + (nominal_issued - nominal_outstanding - redemptions)),0) '% Funded'
 from (
 SELECT
 	t2.series_number,
 
         (SUM((CASE
-            WHEN (`t0`.`transaction_type` = 'RF') THEN `t0`.`settled_quantity`
+            WHEN (`t0`.`transaction_type` = 'RF' and locate('CAEV/PARI', counterparty) = 0) THEN `t0`.`settled_quantity`
             ELSE 0
         END))) AS nominal_issued,
         (SUM((CASE
             WHEN (`t0`.`transaction_type` = 'DVP') THEN `t0`.`settled_quantity`
             WHEN (`t0`.`transaction_type` = 'RVP') THEN -(`t0`.`settled_quantity`)
-            WHEN (`t0`.`transaction_type` = 'DF' and counterparty != 'EUROCLEAR 21235') THEN `t0`.`settled_quantity`
+            WHEN (`t0`.`transaction_type` = 'DF' and counterparty != 'EUROCLEAR 21235' and locate('CAEV/PARI', counterparty) = 0) THEN `t0`.`settled_quantity`
             ELSE 0
         END))) AS nominal_outstanding,
-        sum(case when (`t0`.`transaction_type` = 'DF' and counterparty = 'EUROCLEAR 21235') then `t0`.`settled_quantity` else 0 end) redemptions,
+        sum(case when (`t0`.`transaction_type` = 'DF' and counterparty = 'EUROCLEAR 21235' and locate('CAEV/PARI', counterparty) = 0) then `t0`.`settled_quantity` else 0 end) redemptions,
 		(SUM((CASE
             WHEN (`t0`.`transaction_type` = 'DVP') THEN `t0`.`setltement_amount`
             WHEN (`t0`.`transaction_type` = 'RVP') THEN -(`t0`.`setltement_amount`)
-            WHEN (`t0`.`transaction_type` = 'DF' and counterparty != 'EUROCLEAR 21235') THEN `t0`.`setltement_amount`
+            WHEN (`t0`.`transaction_type` = 'DF' and counterparty != 'EUROCLEAR 21235' and locate('CAEV/PARI', counterparty) = 0) THEN `t0`.`setltement_amount`
             ELSE 0
         END))) AS settlement_amount,
         COUNT(1) AS number_of_transactions
