@@ -3,26 +3,26 @@ select
 group_concat(series_number separator ' + ') as 'Series Number',
 group_concat(account_id separator ' + ') as 'Account Number',
 security_description as 'ISIN',
-sum(case when currency = 'USD' then opening_position / (select usd_eur_begin from quarterly_reporting_setup where id = 0)
+round(sum(case when currency = 'USD' then opening_position / (select usd_eur_begin from quarterly_reporting_setup where id = 0)
 		 when currency = 'CAD' then opening_position / (select cad_eur_begin from quarterly_reporting_setup where id = 0)
          when currency = 'GBP' then opening_position / (select gbp_eur_begin from quarterly_reporting_setup where id = 0)
 		 when currency = 'EUR' then opening_position
-	else 0 end) / 1000 as 'Opening Position',
-sum(case when currency = 'USD' then purchases / (select usd_eur_end from quarterly_reporting_setup where id = 0)
+	else 0 end) / 1000, 0) as 'Opening Position',
+round(sum(case when currency = 'USD' then purchases / (select usd_eur_end from quarterly_reporting_setup where id = 0)
 		 when currency = 'CAD' then purchases / (select cad_eur_end from quarterly_reporting_setup where id = 0)
          when currency = 'GBP' then purchases / (select gbp_eur_end from quarterly_reporting_setup where id = 0)
 		 when currency = 'EUR' then purchases
-	else 0 end) / 1000 as 'Transactions - Purchases',
-sum(case when currency = 'USD' then sales / (select usd_eur_end from quarterly_reporting_setup where id = 0)
+	else 0 end) / 1000, 0) as 'Transactions - Purchases',
+round(sum(case when currency = 'USD' then sales / (select usd_eur_end from quarterly_reporting_setup where id = 0)
 		 when currency = 'CAD' then sales / (select cad_eur_end from quarterly_reporting_setup where id = 0)
          when currency = 'GBP' then sales / (select gbp_eur_end from quarterly_reporting_setup where id = 0)
 		 when currency = 'EUR' then sales
-	else 0 end) / 1000 as 'Transactions - Sales',
-sum(case when currency = 'USD' then closing_position / (select usd_eur_end from quarterly_reporting_setup where id = 0)
+	else 0 end) / 1000, 0) as 'Transactions - Sales',
+round(sum(case when currency = 'USD' then closing_position / (select usd_eur_end from quarterly_reporting_setup where id = 0)
 		 when currency = 'CAD' then closing_position / (select cad_eur_end from quarterly_reporting_setup where id = 0)
          when currency = 'GBP' then closing_position / (select gbp_eur_end from quarterly_reporting_setup where id = 0)
 		 when currency = 'EUR' then closing_position
-	else 0 end) / 1000 as 'Closing Position',
+	else 0 end) / 1000 , 0)as 'Closing Position',
 avg(market_price_at_quarter_end) as 'Market price at quarter-end',
 avg(yield) as 'Yield',
 maturity_date as 'Maturity date',
@@ -31,7 +31,7 @@ original_maturity as 'Original maturity'
 from (
 -- PERSHING --
 select
-distinct(replace (substring(t1.description, locate('ISIN', t1.description) + 5, 14), ' ', '')) security_description,
+replace (substring(t1.description, locate('ISIN', t1.description) + 5, 14), ' ', '') security_description,
 t0.series_number,
 account account_id,
 coalesce(t2_bq.market_value, 0) opening_position,

@@ -31,6 +31,7 @@
         "SeriesPriceModel": "./models/series_price_table",
         "SeriesProductInformationModel": "./models/series_product_information",
         "QuarterlyReportingSetupModel": "./models/quarterly_reporting_setup",
+        "SeriesSubscritionModel": "./models/series_subscriptions",
 
         "CommonService": "./services/common",
         "SqlService": "./services/sql",
