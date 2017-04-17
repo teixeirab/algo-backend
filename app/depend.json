@@ -15,7 +15,7 @@
         "CitiAllTransactionsModel": "./models/citi_all_transactions",
         "CitiUnsettledTransactionsModel": "./models/citi_unsettled_transactions",
         "CitiAvailablePositionModel": "./models/citi_available_position",
-        "CitiPositionsValuationModel": "./models/citi_positions_valuation",
+        "CitiPositionsValuationModel": "./models/citi_positions_valuations",
         "CitiFixedIncomePositionTransactionsModel": "./models/citi_fixed_income_settled_position",
         "PershingPositionsModel": "./models/pershing_positions",
         "PershingTradesModel": "./models/pershing_trades",
