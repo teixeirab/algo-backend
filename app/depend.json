@@ -15,6 +15,7 @@
         "CitiAllTransactionsModel": "./models/citi_all_transactions",
         "CitiUnsettledTransactionsModel": "./models/citi_unsettled_transactions",
         "CitiAvailablePositionModel": "./models/citi_available_position",
+        "CitiPositionsValuationModel": "./models/citi_positions_valuation",
         "CitiFixedIncomePositionTransactionsModel": "./models/citi_fixed_income_settled_position",
         "PershingPositionsModel": "./models/pershing_positions",
         "PershingTradesModel": "./models/pershing_trades",
@@ -31,7 +32,7 @@
         "SeriesPriceModel": "./models/series_price_table",
         "SeriesProductInformationModel": "./models/series_product_information",
         "QuarterlyReportingSetupModel": "./models/quarterly_reporting_setup",
-        "SeriesSubscritionModel": "./models/series_subscriptions",
+        "SeriesSubscriptionModel": "./models/series_subscriptions",
 
         "CommonService": "./services/common",
         "SqlService": "./services/sql",

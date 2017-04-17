@@ -1,51 +1,45 @@
 select
 t1.series_number 'Series Number',
+t1.product_type 'Product Type',
 t1.currency 'Currency',
 sum(opening) - coalesce(beginning, 0) 'Opening',
 sum(increase) 'Increase',
 sum(decrease) + coalesce(middle, 0) 'Decrease',
 sum(closing) - coalesce(final, 0) 'Closing',
-t2.total_equity 'End of Q FV',
-t2.total_equity - sum(closing) 'Accrued Interest',
-case when t3.simple_interest_rate is not null and t3.compounded_interest_rate is not null then 'Simple/Compound'
-	 when t3.simple_interest_rate is not null then 'Simple'
-	 when t3.compounded_interest_rate is not null then 'Compounded' else ''
-     end interest_type,
-coalesce(t3.simple_interest_rate, 0) + coalesce(t3.compounded_interest_rate, 0) interest_rate,
-coalesce(concat(t3.simple_coupon_frequency, '/', t3.compounded_coupon_frequency), t3.simple_coupon_frequency, t3.compounded_coupon_frequency) coupon_frequency,
-'Over 1 Year' as 'Original Maturity',
-t1.maturity_date as 'Maturity Date',
-round(datediff(t1.maturity_date , (select ib_end_date from quarterly_reporting_setup where id = 0)) / 365,0) 'Residual Maturity (in years)'
+t3.total_assets 'Beg of Q FV',
+t2.total_assets 'End of Q FV',
+t2.interest_receivable 'Accrued Interest'
 from
-	(select series_number, series_name, isin from series_names) t0
+	(select series_number, series_name, status, isin from series_names) t0
 	join series_product_information t1 on (t0.series_number = t1.series_number)
-	left outer join theorem_balance_sheet t2 on (t1.series_number = t2.series_number and t2.period = (select navs_monthly_end_date from quarterly_reporting_setup where id = 0))
-	left outer join advances_info t3 on (t1.series_number = t3.series_number)
+	left outer join theorem_balance_sheet t2 on (t1.series_number = t2.series_number and t2.period in ((select navs_monthly_end_date from quarterly_reporting_setup where id = 0), (select navs_weekly_end_date from quarterly_reporting_setup where id = 0)))
+    left outer join theorem_balance_sheet t3 on (t1.series_number = t3.series_number and t3.period in ((select navs_monthly_start_date from quarterly_reporting_setup where id = 0), (select navs_weekly_start_date from quarterly_reporting_setup where id = 0)))
+	left outer join advances_info t4 on (t1.series_number = t4.series_number)
 	left outer join (select isin,
 							SUM(CASE when settlement_date < (select ib_start_date from quarterly_reporting_setup where id = 0) then
-								CASE WHEN (t4.transaction_type = 'DVP') THEN t4.quantity
-									 WHEN (t4.transaction_type = 'RVP') THEN -(t4.quantity)
-									 WHEN (t4.transaction_type = 'DF' and counterparty != 'EUROCLEAR 21235') THEN t4.quantity
+								CASE WHEN (t5.transaction_type = 'DVP') THEN t5.quantity
+									 WHEN (t5.transaction_type = 'RVP') THEN -(t5.quantity)
+									 WHEN (t5.transaction_type = 'DF' and counterparty != 'EUROCLEAR 21235') THEN t5.quantity
 									 ELSE 0 END
 								else 0 end) opening,
 							SUM(CASE when settlement_date > (select ib_start_date from quarterly_reporting_setup where id = 0) && settlement_date < (select ib_end_date from quarterly_reporting_setup where id = 0) then
-								CASE WHEN (t4.transaction_type = 'DVP') THEN t4.quantity
-									 WHEN (t4.transaction_type = 'DF' and counterparty != 'EUROCLEAR 21235') THEN t4.quantity
+								CASE WHEN (t5.transaction_type = 'DVP') THEN t5.quantity
+									 WHEN (t5.transaction_type = 'DF' and counterparty != 'EUROCLEAR 21235') THEN t5.quantity
 									 ELSE 0 END
 								else 0 end)  increase,
 							SUM(CASE when settlement_date > (select ib_start_date from quarterly_reporting_setup where id = 0) && settlement_date < (select ib_end_date from quarterly_reporting_setup where id = 0) then
-								CASE WHEN (t4.transaction_type = 'RVP') THEN -t4.quantity
+								CASE WHEN (t5.transaction_type = 'RVP') THEN -t5.quantity
 									 ELSE 0 END
 								else 0 end)  decrease,
 							SUM(CASE when settlement_date < (select ib_end_date from quarterly_reporting_setup where id = 0) then
-								CASE WHEN (t4.transaction_type = 'DVP') THEN t4.quantity
-									 WHEN (t4.transaction_type = 'RVP') THEN -(t4.quantity)
-									 WHEN (t4.transaction_type = 'DF' and counterparty != 'EUROCLEAR 21235') THEN t4.quantity
+								CASE WHEN (t5.transaction_type = 'DVP') THEN t5.quantity
+									 WHEN (t5.transaction_type = 'RVP') THEN -(t5.quantity)
+									 WHEN (t5.transaction_type = 'DF' and counterparty != 'EUROCLEAR 21235') THEN t5.quantity
 									 ELSE 0 END
 								else 0 end) closing
-							from citi_all_transactions t4
-                group by isin) t4 on (t0.isin = t4.isin)
-		left outer join (select series_number,
+							from citi_all_transactions t5
+                group by isin) t5 on (t0.isin = t5.isin)
+	left outer join (select series_number,
 							sum(case when repayment_date > (select ib_start_date from quarterly_reporting_setup where id = 0) && repayment_date < (select ib_end_date from quarterly_reporting_setup where id = 0)
 										then repayment_amount
 									else 0 end) middle,
@@ -55,8 +49,8 @@ from
 							sum(case when repayment_date < (select ib_end_date from quarterly_reporting_setup where id = 0)
 										then repayment_amount
 									else 0 end) final
-                             from advances_repayments group by series_number) t5 on (t1.series_number = t5.series_number)
-where t1.product_type in ('Loan', 'Hybrid')
-and (closing > 0 or opening > 0)
-group by t1.series_number, t1.currency, t2.total_equity, interest_type, interest_rate, coupon_frequency -- , maturity_date
+                             from advances_repayments group by series_number) t6 on (t1.series_number = t6.series_number)
+where (closing > 0 or opening > 0)
+and t0.status = 'A'
+group by t1.series_number, t1.currency, t2.total_assets, t3.total_assets, t2.interest_receivable
 order by t0.series_number asc;

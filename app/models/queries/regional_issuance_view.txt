@@ -78,7 +78,7 @@ SELECT
 		'Total' region,
          'All' product_type,
         (SUM((CASE
-            WHEN (`t0`.`transaction_type` = 'RF') THEN `t0`.`settled_quantity`
+            WHEN (`t0`.`transaction_type` = 'RF' and locate('CAEV/PARI', counterparty) = 0) THEN `t0`.`settled_quantity`
             ELSE 0
         END)) / 1000000) AS `nominal_issued`,
         (SUM((CASE
