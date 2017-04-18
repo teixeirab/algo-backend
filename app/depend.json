@@ -33,6 +33,7 @@
         "SeriesProductInformationModel": "./models/series_product_information",
         "QuarterlyReportingSetupModel": "./models/quarterly_reporting_setup",
         "SeriesSubscriptionModel": "./models/series_subscriptions",
+        "CitiCashBalances": "./models/citi_cash_balances",
 
         "CommonService": "./services/common",
         "SqlService": "./services/sql",

@@ -19,12 +19,12 @@ from
 							SUM(CASE when settlement_date < (select ib_start_date from quarterly_reporting_setup where id = 0) then
 								CASE WHEN (t5.transaction_type = 'DVP') THEN t5.quantity
 									 WHEN (t5.transaction_type = 'RVP') THEN -(t5.quantity)
-									 WHEN (t5.transaction_type = 'DF' and counterparty != 'EUROCLEAR 21235') THEN t5.quantity
+									 WHEN (t5.transaction_type = 'DF' and counterparty != 'EUROCLEAR 21235' and locate('CAEV/PARI', counterparty) = 0) THEN t5.quantity
 									 ELSE 0 END
 								else 0 end) opening,
 							SUM(CASE when settlement_date > (select ib_start_date from quarterly_reporting_setup where id = 0) && settlement_date < (select ib_end_date from quarterly_reporting_setup where id = 0) then
 								CASE WHEN (t5.transaction_type = 'DVP') THEN t5.quantity
-									 WHEN (t5.transaction_type = 'DF' and counterparty != 'EUROCLEAR 21235') THEN t5.quantity
+									 WHEN (t5.transaction_type = 'DF' and counterparty != 'EUROCLEAR 21235' and locate('CAEV/PARI', counterparty) = 0) THEN t5.quantity
 									 ELSE 0 END
 								else 0 end)  increase,
 							SUM(CASE when settlement_date > (select ib_start_date from quarterly_reporting_setup where id = 0) && settlement_date < (select ib_end_date from quarterly_reporting_setup where id = 0) then
@@ -34,7 +34,7 @@ from
 							SUM(CASE when settlement_date < (select ib_end_date from quarterly_reporting_setup where id = 0) then
 								CASE WHEN (t5.transaction_type = 'DVP') THEN t5.quantity
 									 WHEN (t5.transaction_type = 'RVP') THEN -(t5.quantity)
-									 WHEN (t5.transaction_type = 'DF' and counterparty != 'EUROCLEAR 21235') THEN t5.quantity
+									 WHEN (t5.transaction_type = 'DF' and counterparty != 'EUROCLEAR 21235' and locate('CAEV/PARI', counterparty) = 0) THEN t5.quantity
 									 ELSE 0 END
 								else 0 end) closing
 							from citi_all_transactions t5

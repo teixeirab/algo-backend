@@ -3,6 +3,12 @@
  */
 module.exports = function(FlexFundsDB, Sequelize) {
     return FlexFundsDB.define('series_subscriptions', {
+        id: {
+            type: Sequelize.INTEGER(11),
+            allowNull: false,
+            primaryKey: true,
+            autoIncrement: true
+        },
         series_number: {
             type: Sequelize.INTEGER(50),
             allowNull: false,
