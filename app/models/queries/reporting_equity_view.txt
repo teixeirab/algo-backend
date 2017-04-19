@@ -1,31 +1,36 @@
--- EQUITY --
 select
-
 custody_account_provider as 'Custody Account Provider',
 account_id as 'Account ID',
+series_number as 'Series Number',
+security_id as 'Security ID',
+asset_type as 'Asset Type',
+currency as 'Currency',
 opening_position as 'Opening Position',
 purchases as 'Transactions - Purchases',
 sales as 'Transactions - Sales',
 closing_position as 'Closing Position'
-
 from (
 
 -- Interactive Brokers --
 select
 'Interactive Brokers' custody_account_provider,
-t1.account_id account_id,
-sum(t2_bq.market_value) opening_position,
-sum(case when t1.gross_amount < 0 then abs(t1.gross_amount) else 0 end) purchases,
-sum(case when t1.gross_amount > 0 then abs(t1.gross_amount) else 0 end) sales,
-sum(t2_eq.market_value) closing_position
-from series_product_information t0,
-ib_activity t1
-left outer join ib_positions t2_bq on (t1.account_id = t2_bq.account_id and t1.security_id = t2_bq.security_id and t2_bq.report_date in ('2017-01-29'))
-left outer join ib_positions t2_eq on (t1.account_id = t2_eq.account_id and t1.security_id = t2_eq.security_id and t2_eq.report_date in ('2017-03-22'))
-where t0.account_number = t1.account_id
-and t1.asset_type='STK'
-and settle_date > '2017-01-29'
-group by custody_account_provider, account_id
+coalesce(t2_eq.account_id, t2_bq.account_id) account_id,
+t0.series_number,
+coalesce(t2_eq.con_id, t2_bq.con_id, t1.con_id) security_id,
+coalesce(t2_eq.asset_type, t2_bq.asset_type, t1.asset_type) asset_type,
+coalesce(t2_eq.currency, t2_bq.currency, t1.currency) currency,
+t2_bq.market_value opening_position,
+sum(case when t1.gross_amount < 0 and settle_date > ((select ib_start_date from quarterly_reporting_setup where id = 0)) and settle_date < ((select ib_end_date from quarterly_reporting_setup where id = 0))
+		then abs(t1.gross_amount) else 0 end) purchases,
+sum(case when t1.gross_amount > 0 and settle_date > ((select ib_start_date from quarterly_reporting_setup where id = 0)) and settle_date < ((select ib_end_date from quarterly_reporting_setup where id = 0))
+		then abs(t1.gross_amount) else 0 end) sales,
+t2_eq.market_value closing_position
+from (select series_number, account_number from series_product_information) t0
+join (select * from ib_positions where report_date in ((select ib_start_date from quarterly_reporting_setup where id = 0))) t2_bq on (locate(t2_bq.account_id, t0.account_number) > 0)
+left outer join (select * from ib_positions where report_date in ((select ib_end_date from quarterly_reporting_setup where id = 0))) t2_eq on (t2_bq.account_id = t2_eq.account_id and t2_bq.security_id = t2_eq.security_id)
+left outer join ib_activity t1 on (t1.account_id = t2_eq.account_id and t1.security_id = t2_eq.security_id)
+-- where t2_bq.account_id = 'U1891163'
+group by custody_account_provider, account_id, t2_eq.con_id, t2_bq.con_id, t1.con_id, t2_eq.asset_type, t2_bq.asset_type, t1.asset_type, t1.currency, t0.series_number, t2_eq.currency, t2_bq.currency, t2_bq.market_value, t2_eq.market_value
 
 Union
 
@@ -33,37 +38,49 @@ Union
 select
 'Citibank' custody_account_provider,
 t1.account_id account_id,
-sum(t2_bq.market_value) opening_position,
-sum(case when t1.transaction_type in ('RVP', 'RF') then abs(t1.setltement_amount) else 0 end) purchases,
-sum(case when t1.transaction_type in ('DVP', 'DF') then abs(t1.setltement_amount) else 0 end)  sales,
-sum(t2_eq.market_value) closing_position
-from series_product_information t0,
-citi_all_transactions t1
-left outer join (select v.* from citi_positions_valuations v where v.isin not in (select isin from citi_fixed_income_settled_position))
-	t2_bq on (t1.account_id = t2_bq.account_id and t1.isin = t2_bq.isin and t2_bq.as_of_date in ('2017-01-03'))
-left outer join (select v.* from citi_positions_valuations v where v.isin not in (select isin from citi_fixed_income_settled_position))
-	t2_eq on (t1.account_id = t2_bq.account_id and t1.isin = t2_bq.isin and t2_bq.as_of_date in ('2017-04-03'))
+t0.series_number,
+coalesce(t2_eq.isin, t2_bq.isin, t1.isin) security_id,
+coalesce(t2_eq.asset_type, t2_bq.asset_type) asset_type,
+coalesce(t2_eq.currency, t2_bq.currency, t1.currency) currency,
+coalesce(t2_bq.market_value, 0) opening_position,
+sum(case when t1.transaction_type in ('RVP', 'RF')
+			and t1.settlement_date >= (select citibank_start_date from quarterly_reporting_setup where id = 0)
+            and t1.settlement_date <= (select citibank_end_date from quarterly_reporting_setup where id = 0)
+		 then abs(t1.setltement_amount) else 0 end) purchases,
+sum(case when t1.transaction_type in ('DVP', 'DF')
+	        and t1.settlement_date >= (select citibank_start_date from quarterly_reporting_setup where id = 0)
+            and t1.settlement_date <= (select citibank_end_date from quarterly_reporting_setup where id = 0)
+		 then abs(t1.setltement_amount) else 0 end)  sales,
+coalesce(t2_eq.market_value, 0) closing_position
+from series_names t01
+join series_product_information t0 on (t01.series_number = t0.series_number)
+join citi_all_transactions t1 on (locate(t1.account_id, t0.account_number) > 0)
+left outer join (select v.* from citi_positions_valuations v where as_of_date in ((select citibank_start_date from quarterly_reporting_setup where id = 0)))
+	t2_bq on (t1.account_id = t2_bq.account_id and t1.isin = t2_bq.isin)
+left outer join (select v.* from citi_positions_valuations v where as_of_date in ((select citibank_end_date from quarterly_reporting_setup where id = 0)))
+	t2_eq on (t1.account_id = t2_eq.account_id and t1.isin = t2_eq.isin)
 where 1=1
-and t1.settlement_date > '2017-01-03'
 and t1.account_id not in ('6017709722')
-group by custody_account_provider, account_id
+group by custody_account_provider, account_id, series_number,t1.currency, t2_eq.isin, t2_bq.isin, t1.isin, t2_eq.currency, t2_bq.currency, t2_eq.asset_type, t2_bq.asset_type, t2_bq.market_value, t2_eq.market_value
 
 Union
 -- Pershing --
 select
 'Pershing' custody_account_provider,
 account account_id,
-sum(t2_bq.market_value) opening_position,
-sum(case when t1.net_amount < 0 then abs(t1.net_amount) else 0 end) purchases,
-sum(case when t1.net_amount > 0 then abs(t1.net_amount) else 0 end) sales,
-sum(t2_eq.market_value) closing_position
-from series_product_information t0,
-pershing_trades t1
-left outer join pershing_positions t2_bq on (t1.account = t2_bq.account_number and t1.security_id = t2_bq.security_id and t2_bq.period in ('2017-01-03'))
-left outer join pershing_positions t2_eq on (t1.account = t2_eq.account_number and t1.security_id = t2_eq.security_id and t2_eq.period in ('2017-04-03'))
+t0.series_number,
+t1.cusip security_id,
+coalesce(t2_eq.asset_classification, t2_bq.asset_classification) asset_type,
+'USD' currency,
+t2_bq.market_value opening_position,
+sum(case when t1.net_amount < 0 and settlement_date >= (select pershing_start_date from quarterly_reporting_setup where id = 0) and settlement_date <= (select pershing_end_date from quarterly_reporting_setup where id = 0) then abs(t1.net_amount) else 0 end) purchases,
+sum(case when t1.net_amount > 0 and settlement_date >= (select pershing_start_date from quarterly_reporting_setup where id = 0) and settlement_date <= (select pershing_end_date from quarterly_reporting_setup where id = 0) then abs(t1.net_amount) else 0 end) sales,
+t2_eq.market_value closing_position
+from series_product_information t0
+join (select * from pershing_trades where locate('BUY', description) > 0 or locate('SELL', description) > 0) t1 on (locate(t1.account, t0.account_number) > 0)
+left outer join pershing_positions t2_bq on (t1.account = t2_bq.account_number and t1.cusip = t2_bq.cusip and t2_bq.period in ((select pershing_start_date from quarterly_reporting_setup where id = 0)))
+left outer join pershing_positions t2_eq on (t1.account = t2_eq.account_number and t1.cusip = t2_eq.cusip and t2_eq.period in ((select pershing_end_date from quarterly_reporting_setup where id = 0)))
 where t0.account_number = t1.account
-and (t2_bq.asset_classification in ('EQUITY', 'MUTUAL FUND') or t2_eq.asset_classification in ('EQUITY', 'MUTUAL FUND'))
-and settlement_date > '2017-01-03'
-group by custody_account_provider, account_id
-
+group by custody_account_provider, account_id, series_number, currency, t2_eq.asset_classification, t2_bq.asset_classification,t1.cusip, t2_bq.market_value, t2_eq.market_value
 ) a
+where (opening_position > 0 or closing_position > 0 or sales > 0 or purchases > 0)

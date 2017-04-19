@@ -85,6 +85,22 @@ module.exports = function(FlexFundsDB, Sequelize) {
       type: Sequelize.STRING,
       allowNull: true
     },
+    rating: {
+      type: Sequelize.STRING,
+      allowNull: true
+    },
+    current_yield: {
+      type: Sequelize.DOUBLE,
+      allowNull: true
+    },
+    maturity_date: {
+      type: Sequelize.DATE,
+      allowNull: true
+    },
+    coupon: {
+      type: Sequelize.DOUBLE,
+      allowNull: true
+    },
     dt_added: {
       type: Sequelize.DATE,
       allowNull: false,

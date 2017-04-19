@@ -6,12 +6,26 @@ case when product_type = 'Wrapper' then 'Equity' when product_type='Loan' then '
 t1.shares 'Shares',
 t1.type_of_subscription 'Type of Subscription',
 t1.currency 'Currency',
-t2.total_equity 'Fair Value',
+t2.total_assets - t2.interest_receivable 'Fair Value (Clean)',
+t2.interest_receivable 'Interest Accrued',
 t1.issue_date 'Issue Date',
 t1.custodian 'Custodian',
-t1.account_number 'Account Number'
+t1.account_number 'Account Number',
+case when t4.simple_interest_rate is not null and t4.compounded_interest_rate is not null then 'Simple/Compound'
+	 when t4.simple_interest_rate is not null then 'Simple'
+	 when t4.compounded_interest_rate is not null then 'Compounded' else ''
+     end 'Interest Rate Type',
+coalesce(t4.simple_interest_rate, 0) + coalesce(t4.compounded_interest_rate, 0) 'Interest Rate',
+coalesce(concat(t4.simple_coupon_frequency, '/', t4.compounded_coupon_frequency), t4.simple_coupon_frequency, t4.compounded_coupon_frequency) 'Coupon Frequency',
+'Over 1 Year' as 'Original Maturity',
+t1.maturity_date as 'Maturity Date',
+round(datediff(t1.maturity_date , (select ib_end_date from quarterly_reporting_setup where id = 0)) / 365,0) 'Residual Maturity (in years)'
 from
-(select distinct(series_number) series_number, series_name from series_names) t0
-				join series_product_information t1 on (t0.series_number = t1.series_number)
-				left outer join theorem_balance_sheet t2 on (t1.series_number = t2.series_number and t2.period = '{param0}')
+(select distinct(series_number) series_number, series_name, status from series_names) t0
+join series_product_information t1 on (t0.series_number = t1.series_number)
+left outer join theorem_balance_sheet t2 on (t1.series_number = t2.series_number and t2.period in ((select navs_monthly_end_date from quarterly_reporting_setup where id = 0), (select navs_weekly_end_date from quarterly_reporting_setup where id = 0)))
+left outer join (select * from funding_view) t3 on (t3.`Series Number` = t1.series_number)
+left outer join advances_info t4 on (t1.series_number = t4.series_number)
+where t0.status = 'A'
+and t3.`Nominal Outstanding` > 0
 order by t0.series_number asc;

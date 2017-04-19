@@ -1,13 +1,30 @@
 -- NON ISIN --
 select
-account_id as 'Series Number',
+group_concat(series_number separator ' + ') as 'Series Number',
+group_concat(account_id separator ' + ') as 'Account Number',
 security_description as 'Sedol/Cusip/Internal',
-opening_position as 'Opening Position',
-purchases as 'Transactions - Purchases',
-sales as 'Transactions - Sales',
-closing_position as 'Closing Position',
-market_price_at_quarter_end as 'Market price at quarter-end',
-yield as 'Yield',
+sum(case when currency = 'USD' then opening_position / (select usd_eur_begin from quarterly_reporting_setup where id = 0)
+		 when currency = 'CAD' then opening_position / (select cad_eur_begin from quarterly_reporting_setup where id = 0)
+         when currency = 'GBP' then opening_position / (select gbp_eur_begin from quarterly_reporting_setup where id = 0)
+		 when currency = 'EUR' then opening_position
+	else 0 end) / 1000 as 'Opening Position',
+sum(case when currency = 'USD' then purchases / (select usd_eur_end from quarterly_reporting_setup where id = 0)
+		 when currency = 'CAD' then purchases / (select cad_eur_end from quarterly_reporting_setup where id = 0)
+         when currency = 'GBP' then purchases / (select gbp_eur_end from quarterly_reporting_setup where id = 0)
+		 when currency = 'EUR' then purchases
+	else 0 end) / 1000 as 'Transactions - Purchases',
+sum(case when currency = 'USD' then sales / (select usd_eur_end from quarterly_reporting_setup where id = 0)
+		 when currency = 'CAD' then sales / (select cad_eur_end from quarterly_reporting_setup where id = 0)
+         when currency = 'GBP' then sales / (select gbp_eur_end from quarterly_reporting_setup where id = 0)
+		 when currency = 'EUR' then sales
+	else 0 end) / 1000 as 'Transactions - Sales',
+sum(case when currency = 'USD' then closing_position / (select usd_eur_end from quarterly_reporting_setup where id = 0)
+		 when currency = 'CAD' then closing_position / (select cad_eur_end from quarterly_reporting_setup where id = 0)
+         when currency = 'GBP' then closing_position / (select gbp_eur_end from quarterly_reporting_setup where id = 0)
+		 when currency = 'EUR' then closing_position
+	else 0 end) / 1000 as 'Closing Position',
+avg(market_price_at_quarter_end) as 'Market price at quarter-end',
+avg(yield) as 'Yield',
 maturity_date as 'Maturity date',
 original_maturity as 'Original maturity',
 country as 'Country',
@@ -17,50 +34,60 @@ from (
 
 -- INTERACTIVE BROKERS --
 select
-distinct(substring(replace(replace(replace(t1.security_description, " ", ""), "/" ,""), ".", ""), 1, 15)) security_description,
-concat(t0.series_number, '-', t1.account_id) account_id,
-t2_bq.market_value opening_position,
-sum(case when t1.gross_amount < 0 then abs(t1.gross_amount) else 0 end) purchases,
-sum(case when t1.gross_amount > 0 then abs(t1.gross_amount) else 0 end) sales,
-t2_eq.market_value closing_position,
-t2_eq.market_price market_price_at_quarter_end,
+coalesce(
+	substring(replace(replace(replace(t1.symbol, " ", ""), "/" ,""), ".", ""), 1, 15),
+    substring(replace(replace(replace(t2_eq.symbol, " ", ""), "/" ,""), ".", ""), 1, 15),
+    substring(replace(replace(replace(t2_bq.symbol, " ", ""), "/" ,""), ".", ""), 1, 15)
+    ) security_description,
+t0.series_number,
+coalesce(t1.account_id, t2_eq.account_id, t2_bq.account_id) account_id,
+coalesce(t2_bq.market_value, 0) opening_position,
+sum(case when t1.gross_amount < 0 and settle_date > ((select ib_start_date from quarterly_reporting_setup where id = 0)) and settle_date < ((select ib_end_date from quarterly_reporting_setup where id = 0))
+		then abs(t1.gross_amount) else 0 end) purchases,
+sum(case when t1.gross_amount > 0 and settle_date > ((select ib_start_date from quarterly_reporting_setup where id = 0)) and settle_date < ((select ib_end_date from quarterly_reporting_setup where id = 0))
+		then abs(t1.gross_amount) else 0 end) sales,
+coalesce(t2_eq.market_value, 0) closing_position,
+coalesce(t2_eq.market_price, 0) market_price_at_quarter_end,
 0 yield,
 0 maturity_date,
+coalesce(t1.currency, t2_bq.currency, t2_eq.currency) currency,
 0 original_maturity,
 0 country,
 0 sector
-from series_product_information t0,
-ib_activity t1
-left outer join ib_positions t2_bq on (t1.account_id = t2_bq.account_id and t1.security_id = t2_bq.security_id and t2_bq.report_date in ('2017-01-29'))
-left outer join ib_positions t2_eq on (t1.account_id = t2_eq.account_id and t1.security_id = t2_eq.security_id and t2_eq.report_date in ('2017-03-22'))
-where t0.account_number = t1.account_id
-and t1.asset_type='BOND'
-and settle_date > '2017-01-29'
-group by security_description,  account_id, opening_position, closing_position, market_price_at_quarter_end, yield, maturity_date, original_maturity, country, sector
+from (select series_number, account_number from series_product_information) t0
+join (select * from ib_positions where report_date in ((select ib_start_date from quarterly_reporting_setup where id = 0))) t2_bq on (locate(t2_bq.account_id, t0.account_number) > 0)
+left outer join (select * from ib_positions where report_date in ((select ib_end_date from quarterly_reporting_setup where id = 0))) t2_eq on (t2_bq.account_id = t2_eq.account_id and t2_bq.security_id = t2_eq.security_id)
+left outer join ib_activity t1 on (t1.account_id = t2_eq.account_id and t1.security_id = t2_eq.security_id)
+where 1=1
+and (t2_bq.asset_type='BOND' or t2_eq.asset_type='BOND')
+group by security_description, series_number, currency,  account_id, opening_position, closing_position, market_price_at_quarter_end, yield, maturity_date, original_maturity, country, sector
 
 Union
 -- PERSHING --
 select
-distinct(t1.cusip) security_description,
+coalesce(t2_eq.cusip, t2_bq.cusip, t1.cusip) security_description,
+t0.series_number,
 account account_id,
-t2_bq.market_value opening_position,
-sum(case when t1.net_amount < 0 then abs(t1.net_amount) else 0 end) purchases,
-sum(case when t1.net_amount > 0 then abs(t1.net_amount) else 0 end) sales,
-t2_eq.market_value closing_position,
-t2_eq.price market_price_at_quarter_end,
-0 yield,
-0 maturity_date,
-0 original_maturity,
+coalesce(t2_bq.market_value, 0) opening_position,
+sum(case when t1.net_amount < 0 and settlement_date >= (select pershing_start_date from quarterly_reporting_setup where id = 0) and settlement_date <= (select pershing_end_date from quarterly_reporting_setup where id = 0) then abs(t1.net_amount) else 0 end) purchases,
+sum(case when t1.net_amount > 0 and settlement_date >= (select pershing_start_date from quarterly_reporting_setup where id = 0) and settlement_date <= (select pershing_end_date from quarterly_reporting_setup where id = 0) then abs(t1.net_amount) else 0 end) sales,
+coalesce(t2_eq.market_value, 0) closing_position,
+coalesce(t2_eq.price, 0) market_price_at_quarter_end,
+coalesce(t2_eq.current_yield, t2_bq.current_yield) yield,
+coalesce(t2_eq.maturity_date, t2_bq.maturity_date) maturity_date,
+'USD' currency,
+'Over two years' original_maturity,
 0 country,
 0 sector
-from series_product_information t0,
-pershing_trades t1
-left outer join pershing_positions t2_bq on (t1.account = t2_bq.account_number and t1.security_id = t2_bq.security_id and t2_bq.period in ('2017-01-03'))
-left outer join pershing_positions t2_eq on (t1.account = t2_eq.account_number and t1.security_id = t2_eq.security_id and t2_eq.period in ('2017-04-03'))
-where t0.account_number = t1.account
-and (t2_bq.asset_classification='FIXED INCOME' or t2_eq.asset_classification='FIXED INCOME')
-and settlement_date > '2017-01-03'
-and locate('ISIN', t1.description)  <= 0
-group by security_description, account_id, opening_position, closing_position, market_price_at_quarter_end, yield, maturity_date, original_maturity, country, sector
-order by closing_position
-) a
+from (select series_number, account_number from series_product_information) t0
+join (select * from pershing_trades where locate('BUY', description) > 0 or locate('SELL', description) > 0) t1 on (locate(t1.account, t0.account_number) > 0)
+left outer join pershing_positions t2_bq on (t1.account = t2_bq.account_number and t1.cusip = t2_bq.cusip and t2_bq.period in ((select pershing_start_date from quarterly_reporting_setup where id = 0)))
+left outer join pershing_positions t2_eq on (t1.account = t2_eq.account_number and t1.cusip = t2_eq.cusip and t2_eq.period in ((select pershing_end_date from quarterly_reporting_setup where id = 0)))
+where 1=1
+and (t2_bq.asset_classification = 'FIXED INCOME' or t2_eq.asset_classification='FIXED INCOME')
+and locate('ISIN', t1.description) = 0
+and (t2_bq.market_value is not null or t2_eq.market_value is not null)
+group by security_description, series_number, currency,  account_id, opening_position, closing_position, market_price_at_quarter_end, yield, maturity_date, original_maturity, country, sector
+order by series_number, closing_position
+) a group by security_description, original_maturity, maturity_date, currency, country, sector;
+
