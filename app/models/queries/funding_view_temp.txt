@@ -1,14 +1,16 @@
 select series_number 'Series Number',
+	product_type,
 	nominal_issued 'Nominal Issued',
     nominal_outstanding 'Nominal Outstanding',
     nominal_issued - nominal_outstanding - redemptions 'Inventory',
     settlement_amount 'Cash Received',
+    net_subscribed 'Net Subscribed',
     number_of_transactions 'Number of Transactions',
     coalesce(nominal_outstanding / (nominal_outstanding + (nominal_issued - nominal_outstanding - redemptions)),0) '% Funded'
 from (
 SELECT
 	t2.series_number,
-
+    t2.product_type,
         (SUM((CASE
             WHEN (`t0`.`transaction_type` = 'RF' and locate('CAEV/PARI', counterparty) = 0) THEN `t0`.`settled_quantity`
             ELSE 0
@@ -23,18 +25,26 @@ SELECT
 		(SUM((CASE
             WHEN (`t0`.`transaction_type` = 'DVP') THEN `t0`.`setltement_amount`
             WHEN (`t0`.`transaction_type` = 'RVP') THEN (`t0`.`setltement_amount`)
-            WHEN (`t0`.`transaction_type` = 'DF' and counterparty != 'EUROCLEAR 21235' and locate('CAEV/PARI', counterparty) = 0) THEN `t0`.`setltement_amount`
+            WHEN (`t0`.`transaction_type` = 'DF' and counterparty != 'EUROCLEAR 21235' and locate('CAEV/PARI', counterparty) = 0) THEN `t0`.`settled_quantity`
             ELSE 0
         END))) AS settlement_amount,
+        t3.net_subscribed,
         COUNT(1) AS number_of_transactions
     FROM
         (`flexfunds`.`citi_all_transactions` `t0`
         JOIN `flexfunds`.`series_names` `t1` on (t0.isin = t1.isin)
         JOIN `flexfunds`.`series_product_information` `t2` on (t1.series_number = t2.series_number))
+        left outer join (select series_number, sum(CASE
+					WHEN (`transaction_type` = 'DVP') THEN shares_purchased * purchase_price
+					WHEN (`transaction_type` = 'RVP') THEN -(shares_purchased * purchase_price)
+					WHEN (`transaction_type` = 'DF') THEN  shares_purchased * purchase_price
+                    else 0 end) net_subscribed
+			from
+            series_subscriptions group by series_number) t3 on (t3.series_number = t1.series_number)
     WHERE
         (CONVERT( `t0`.`isin` USING UTF8) = `t1`.`isin`)
         and account_id = '6017709722'
         and t1.status = 'A'
-        and t0.settlement_date < '{param0} '
-	group by t2.series_number
+        and t0.settlement_date < '{param0}'
+	group by t2.series_number, t3.net_subscribed
 ) a;
