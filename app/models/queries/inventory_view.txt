@@ -2,9 +2,9 @@ SELECT
 b.series_number 'Series Number',
 b.six_name 'Series Name',
 a.isin 'ISIN',
-settled_position 'Settled Position',
+settled_position 'Total Inventory',
 blocked_position 'Blocked Position',
-available_position 'Available Position'
+available_position 'Available Inventory'
 from
 citi_available_position a,
 series_names b
