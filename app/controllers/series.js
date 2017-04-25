@@ -3,7 +3,7 @@ const async = require('async')
 const moment = require('moment')
 const _ = require('lodash')
 
-module.exports = function(PerformanceService, LoanService, SeriesProductInformationModel) {
+module.exports = function(PerformanceService, LoanService, SeriesProductInformationModel, QBTransactionListModel) {
   const that = this
 
   this.checkExists = function(req, res, next, seriesNumber) {
@@ -132,6 +132,18 @@ module.exports = function(PerformanceService, LoanService, SeriesProductInformat
     const seriesNumber = req.params.seriesNumber
     LoanService.getLoanInfo(seriesNumber).then((result) => {
       res.send(result)
+    })
+  }
+
+  this.getInvoicesByCompany = function(req, res) {
+    const company = req.params.company
+    QBTransactionListModel.findAll({
+      where: {
+        qb_account: company,
+        txn_type: 'Invoice'
+      }
+    }).then((invoices) => {
+      res.send(invoices)
     })
   }
 
