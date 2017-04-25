@@ -3,8 +3,9 @@ select series_number 'Series Number',
     nominal_outstanding 'Nominal Outstanding',
     nominal_issued - nominal_outstanding - redemptions 'Inventory',
     settlement_amount 'Cash Received',
-    number_of_transactions 'Number of Transactions',
-    coalesce(nominal_outstanding / (nominal_outstanding + (nominal_issued - nominal_outstanding - redemptions)),0) '% Funded'
+    shares_purchased 'Shares Purchased/Subscribed',
+    coalesce(nominal_outstanding / (nominal_outstanding + (nominal_issued - nominal_outstanding - redemptions)),0) '% Funded',
+    number_of_transactions 'Number of Transactions'
 from (
 SELECT
 	t2.series_number,
@@ -26,15 +27,21 @@ SELECT
             WHEN (`t0`.`transaction_type` = 'DF' and counterparty != 'EUROCLEAR 21235' and locate('CAEV/PARI', counterparty) = 0) THEN `t0`.`setltement_amount`
             ELSE 0
         END))) AS settlement_amount,
+        shares_purchased,
         COUNT(1) AS number_of_transactions
     FROM
         (`flexfunds`.`citi_all_transactions` `t0`
         JOIN `flexfunds`.`series_names` `t1` on (t0.isin = t1.isin)
         JOIN `flexfunds`.`series_product_information` `t2` on (t1.series_number = t2.series_number))
+        JOIN (select series_number,
+				sum(case when transaction_type in ('RF', 'RVP') then -1 * shares_purchased else shares_purchased end) shares_purchased
+				from flexfunds.series_subscriptions
+                where period < '{param0}'
+                group by series_number) t3 on (t3.series_number = t2.series_number)
     WHERE
         (CONVERT( `t0`.`isin` USING UTF8) = `t1`.`isin`)
         and account_id = '6017709722'
         and t1.status = 'A'
-        and t0.settlement_date < '{param0} '
+        and t0.settlement_date < '{param0}'
 	group by t2.series_number
 ) a;
