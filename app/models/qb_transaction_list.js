@@ -149,6 +149,12 @@ module.exports = function(FlexFundsDB, Sequelize) {
             }
           }
         })
+      },
+      beforeFind: (options, cb) => {
+        options.where.txn_type = {
+          $in: ['Invoice', 'Bill', 'Payment']
+        }
+        cb()
       }
     }
   });
