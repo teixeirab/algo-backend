@@ -1,0 +1,10 @@
+select
+txn_type as 'Type',
+create_date as 'Create Date' ,
+due_date as 'Due Date',
+case when is_ap_paid = '' && nat_home_open_bal > 0 then 'Unpaid' when nat_home_open_bal = 0 then 'Paid' else is_ap_paid end as 'Status',
+subt_nat_home_amount as 'Amount',
+sales_cust1 as 'For',
+currency as 'Currency'
+from qb_transaction_list
+where name = '{param0}';

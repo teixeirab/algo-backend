@@ -38,6 +38,10 @@ module.exports = function(FlexFundsDB) {
           + table +  ' t0, series_names t1 where t0.series_number = t1.series_number and t0.product_type = "Fund" order by value asc;';
     }
 
+    else if(query_name == 'qb_transaction_list_view'){
+      query = 'select distinct(name) as label, name as value from qb_transaction_list where txn_type = "Invoice";'
+    }
+
     else if(query_name == 'reporting_series_view'){
       query = 'select distinct(period) as label, period as value from theorem_balance_sheet where type= "Monthly" order by value desc;'
     }
