@@ -11,20 +11,20 @@ SELECT
 	t2.series_number,
 
         (SUM((CASE
-            WHEN (`t0`.`transaction_type` = 'RF' and locate('CAEV/PARI', counterparty) = 0) THEN `t0`.`settled_quantity`
+            WHEN (`t0`.`transaction_type` = 'RF' and locate('CAEV/PARI', counterparty) = 0 and locate('DUMMY SEDOL CLEANUP', counterparty) = 0) THEN `t0`.`settled_quantity`
             ELSE 0
         END))) AS nominal_issued,
         (SUM((CASE
             WHEN (`t0`.`transaction_type` = 'DVP') THEN `t0`.`settled_quantity`
             WHEN (`t0`.`transaction_type` = 'RVP') THEN -(`t0`.`settled_quantity`)
-            WHEN (`t0`.`transaction_type` = 'DF' and counterparty != 'EUROCLEAR 21235' and locate('CAEV/PARI', counterparty) = 0) THEN `t0`.`settled_quantity`
+            WHEN (`t0`.`transaction_type` = 'DF' and counterparty != 'EUROCLEAR 21235' and locate('CAEV/PARI', counterparty) = 0 and locate('DUMMY SEDOL CLEANUP', counterparty) = 0) THEN `t0`.`settled_quantity`
             ELSE 0
         END))) AS nominal_outstanding,
-        sum(case when (`t0`.`transaction_type` = 'DF' and counterparty = 'EUROCLEAR 21235' and locate('CAEV/PARI', counterparty) = 0) then `t0`.`settled_quantity` else 0 end) redemptions,
+        sum(case when (`t0`.`transaction_type` = 'DF' and counterparty = 'EUROCLEAR 21235' and locate('CAEV/PARI', counterparty) = 0 and locate('DUMMY SEDOL CLEANUP', counterparty) = 0) then `t0`.`settled_quantity` else 0 end) redemptions,
 		(SUM((CASE
             WHEN (`t0`.`transaction_type` = 'DVP') THEN `t0`.`setltement_amount`
             WHEN (`t0`.`transaction_type` = 'RVP') THEN (`t0`.`setltement_amount`)
-            WHEN (`t0`.`transaction_type` = 'DF' and counterparty != 'EUROCLEAR 21235' and locate('CAEV/PARI', counterparty) = 0) THEN `t0`.`setltement_amount`
+            WHEN (`t0`.`transaction_type` = 'DF' and counterparty != 'EUROCLEAR 21235' and locate('CAEV/PARI', counterparty) = 0 and locate('DUMMY SEDOL CLEANUP', counterparty) = 0) THEN `t0`.`setltement_amount`
             ELSE 0
         END))) AS settlement_amount,
         coalesce(shares_purchased, '') shares_purchased,
