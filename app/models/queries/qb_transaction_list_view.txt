@@ -1,12 +1,31 @@
+select * from (
 select
 doc_num as 'Doc Num',
 create_date as 'Create Date' ,
 due_date as 'Due Date',
-case when is_ap_paid = '' && nat_home_open_bal > 0 then 'Unpaid' when nat_home_open_bal = 0 or null then 'Paid' else is_ap_paid end as 'Status',
+case when is_ap_paid = '' && nat_home_open_bal > 0 then 'Unpaid' when nat_home_open_bal = 0 then 'Paid' when nat_home_open_bal is null then 'Paid' else is_ap_paid end as 'Status',
 subt_nat_home_amount as 'Amount',
 sales_cust1 as 'For',
-currency as 'Currency'
+currency as 'Currency',
+name as client_name
 from qb_transaction_list
 where 1=1
 and txn_type = 'Invoice'
-and name = '{param0}';
+and name = '{param0}'
+
+Union
+
+select
+doc_num as 'Doc Num',
+create_date as 'Create Date' ,
+due_date as 'Due Date',
+case when is_ap_paid = '' && nat_home_open_bal > 0 then 'Unpaid' when nat_home_open_bal = 0 then 'Paid' when nat_home_open_bal is null then 'Paid' else is_ap_paid end as 'Status',
+subt_nat_home_amount as 'Amount',
+sales_cust1 as 'For',
+currency as 'Currency',
+'.All' as client_name
+from qb_transaction_list
+where 1=1
+and txn_type = 'Invoice'
+) a
+where client_name = '{param0}';

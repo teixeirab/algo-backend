@@ -39,7 +39,7 @@ module.exports = function(FlexFundsDB) {
     }
 
     else if(query_name == 'qb_transaction_list_view'){
-      query = 'select distinct(name) as label, name as value from qb_transaction_list where txn_type = "Invoice";'
+      query = 'select distinct(case when name = ".All" then "All" else name end) as label, name as value from qb_transaction_list where txn_type = "Invoice" order by value;'
     }
 
     else if(query_name == 'reporting_series_view'){
@@ -59,7 +59,7 @@ module.exports = function(FlexFundsDB) {
       query = 'select distinct(' + selectType + ') label, ' + selectType +' value from ' + table + ' order by ' + selectType + ' asc;';
     }
     return FlexFundsDB.query(query, { type: FlexFundsDB.QueryTypes.SELECT })
-  }
+  };
 
   this.getPrice = function(series_number, settlement_date){
     var query = require("../models/queries/prices.txt");
@@ -69,7 +69,7 @@ module.exports = function(FlexFundsDB) {
     query = replaceAll(query, '{param2}', settlement_date.replace('-', '').replace('-', '').substring(0,6));
 
     return FlexFundsDB.query(query, { type: FlexFundsDB.QueryTypes.SELECT })
-  }
+  };
 
   this.viewData = function(query_name, param){
       var query = require("../models/queries/" + query_name +".txt");
