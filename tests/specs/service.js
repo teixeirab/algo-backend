@@ -9,6 +9,7 @@ var _ = require('lodash');
 describe('service tests', function() {
   let vars = [
     'PerformanceService',
+    'QuickBookService',
     'TheoremBalanceSheetModel',
     'SeriesProductInformationModel',
     'FlexFundsDB'
@@ -111,6 +112,51 @@ describe('service tests', function() {
           done()
         })
       })
+    });
+  });
+  describe.only('qb tests', function () {
+    it('create invoices', function (done) {
+      const invoice = {
+        "Line": [{
+            "Amount": 6000,
+            "DetailType": "SalesItemLineDetail",
+            "SalesItemLineDetail": {
+              "ItemRef": {
+                "value": "17"
+              },
+              "ClassRef": {
+                "value": "3400000000000687253"
+              },
+              // "UnitPrice": 6000,
+              "Qty": 1
+            }
+          },
+          // {
+          //   "Amount": 6000,
+          //   "DetailType": "SubTotalLineDetail",
+          //   "SubTotalLineDetail": {}
+          // }
+        ],
+        "CustomerRef": {
+          "value": "59"
+        },
+        "CustomerMemo": {
+          "value": "test memo"
+        },
+        CurrencyRef: {
+          value: 'CNY'
+        }
+      }
+      vars['QuickBookService']
+        .createInvoice(invoice)
+        .then((createdInvoice) => {
+          console.log('res', JSON.stringify(createdInvoice, undefined, 2))
+          done();
+        })
+        .catch((err) => {
+          console.log(JSON.stringify(err, undefined, 2))
+          done()
+        })
     });
   });
 });

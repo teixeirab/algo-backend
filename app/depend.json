@@ -41,6 +41,7 @@
         "MailService": "./services/mail",
         "PerformanceService": "./services/performance",
         "LoanService": "./services/loan",
+        "QuickBookService": "./services/quickbooks",
 
         "UserController": "./controllers/user",
         "DataController": "./controllers/data",
