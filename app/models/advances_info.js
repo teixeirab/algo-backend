@@ -27,6 +27,10 @@ module.exports = function(FlexFundsDB, Sequelize) {
       type: Sequelize.ENUM('Bullet','No Repayment','Amortized'),
       allowNull: false
     },
+    basis: {
+      type: Sequelize.DOUBLE,
+      allowNull: false
+    },
     simple_interest_rate: {
       type: Sequelize.FLOAT,
       allowNull: true

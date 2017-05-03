@@ -1,9 +1,28 @@
+select id, series_number,nominal_outstanding,loan_payment_date,
+case when simple_interest_rate is null then 0 else
+	calculate_payment(simple_interest_rate,
+					  nominal_outstanding,
+					  loan_payment_date,
+					  case when previous_payment_date is null then interest_accrual_date else previous_payment_date end,
+					  day_count_convention) end +
+case when compounded_interest_rate is null then 0 else
+	calculate_payment(compounded_interest_rate,
+					  nominal_outstanding,
+					  case when previous_payment_date is null then interest_accrual_date else previous_payment_date end,
+					  interest_accrual_date,
+					  day_count_convention) end as total_interest_income,
+interest_repayment(series_number, loan_payment_date, previous_payment_date, interest_accrual_date)
+
+from (
 SELECT
         `a`.`id` AS `id`,
-        `a`.`loan_payment_date` AS `Loan Payment Date`,
-        `a`.`interest_determination_date` AS `Interest Determination Date`,
-        `a`.`series_interest_payment_date` AS `Series Interest Payment Date`,
-        `a`.`previous_payment_date` AS `Previous Payment Date`,
+        a.series_number,
+        `a`.`loan_payment_date`,
+        b.simple_interest_rate,
+        previous_payment_date,
+        day_count_convention,
+        interest_accrual_date,
+        compounded_interest_rate,
         ((SELECT
                 SUM((CASE
                         WHEN (`t0`.`transaction_type` = 'DVP') THEN `t0`.`quantity`
@@ -16,7 +35,8 @@ SELECT
                     `series`.`series_number` AS `series_number`,
                         `citi`.`settlement_date` AS `settlement_date`,
                         `citi`.`transaction_type` AS `transaction_type`,
-                        `citi`.`quantity` AS `quantity`
+                        `citi`.`quantity` AS `quantity`,
+                        counterparty
                 FROM
                     (`flexfunds`.`citi_all_transactions` `citi`
                 JOIN `flexfunds`.`series_names` `series`)
@@ -31,9 +51,10 @@ SELECT
                     WHERE
                         ((`t0`.`repayment_date` < `a`.`loan_payment_date`)
                             AND (`t0`.`series_number` = `a`.`series_number`))),
-                0)) AS `Nominal Outstanding`
+                0)) AS nominal_outstanding
     FROM
         `flexfunds`.`advances_schedule` `a`
-	where series_number= '{param0}'
-    ORDER BY `a`.`series_number` , `a`.`loan_payment_date`
-    
+        join advances_info b on (a.series_number = b.series_number)
+	where a.series_number= '{param0}'
+) t1
+group by id, series_number, nominal_outstanding, loan_payment_date;
