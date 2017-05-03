@@ -31,7 +31,7 @@ gulp.task('test', ['testConfig'], function() {
     .pipe(mocha({
       recursive: true,
       reporter: 'spec',
-      timeout: 10000,
+      timeout: 20000,
       ui: 'bdd',
       globals: ['app']
     }))

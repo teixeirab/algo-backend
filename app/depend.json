@@ -35,6 +35,10 @@
         "SeriesSubscriptionModel": "./models/series_subscriptions",
         "CitiCashBalancesModel": "./models/citi_cash_balances",
         "QBTransactionListModel": "./models/qb_transaction_list",
+        "QBCustomerModel": "./models/qb_customer",
+        "QBClassModel": "./models/qb_class",
+        "QBItemModel": "./models/qb_item",
+        "QBInvoiceTypeItemModel": "./models/qb_invoice_type_item",
 
         "CommonService": "./services/common",
         "SqlService": "./services/sql",

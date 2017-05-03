@@ -115,6 +115,68 @@ describe('service tests', function() {
     });
   });
   describe.only('qb tests', function () {
+    it('create customer', function (done) {
+      const params = {
+        qb_account: 'flexfunds',
+        email: 'kata.choi@gmail.com',
+        given_name: 'kata',
+        family_name: 'choi',
+        fully_qualified_name: 'kc',
+        company_name: 'comp',
+        display_name: '' + Math.random(100000),
+        print_on_check_name: 'kc',
+        bill_addr_line_1: 'addr line 1',
+        bill_addr_city: 'city',
+        bill_addr_country_sub_division_code: '1111',
+        bill_addr_postal_code: '123',
+        currency_code: 'AUD'
+      }
+      vars['QuickBookService']
+        .createCustomer(params)
+        .then((result) => {
+          console.log(JSON.stringify(result, undefined, 2))
+          done();
+        })
+        .catch((err) => {
+          console.log(JSON.stringify(err))
+          done()
+        })
+    });
+    it('create class', function (done) {
+      vars['QuickBookService']
+        .createClass({
+          qb_account: 'flexfunds',
+          series_number: Math.random()
+        })
+        .then((result) => {
+          console.log(JSON.stringify(result, undefined, 2))
+          done();
+        })
+        .catch((err) => {
+          console.log(JSON.stringify(err))
+          done()
+        })
+    });
+    it.only('create item', function (done) {
+      vars['QuickBookService']
+        .createItem({
+          qb_account: 'flexfunds',
+          name: Math.random(),
+          type: 'Service',
+          description: 'Service',
+          income_account_id: 1,
+          expense_account_id: 2,
+          asset_account_id: 81,
+        })
+        .then((item) => {
+          console.log(item.toJSON())
+          done();
+        })
+        .catch((err) => {
+          console.log(JSON.stringify(err))
+          done()
+        })
+    });
     it('create invoices', function (done) {
       const invoice = {
         "Line": [{
