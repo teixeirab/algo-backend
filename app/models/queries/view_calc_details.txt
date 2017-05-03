@@ -1,0 +1,28 @@
+select client_reference as 'ID #', settlement_date 'Settlement Date', advance_balance 'Advance Balance',
+interest_repayment 'Interest Repayment', simple_interest_income 'Simple Interest Income',
+compounded_interest_income 'Compounded Interest Income',
+transaction_type 'Transaction Type'
+from (
+select client_reference, settlement_date, coalesce(quantity,0) as advance_balance, coalesce(setltement_amount,0) - coalesce(quantity,0) interest_repayment,
+coalesce(
+case when simple_interest_rate is null then 0 else
+	calculate_payment(simple_interest_rate,
+					  coalesce(quantity,0),
+					  loan_payment_date,
+					  case when previous_payment_date is null then interest_accrual_date else previous_payment_date end,
+					  day_count_convention) end, 0) as simple_interest_income,
+coalesce(
+case when compounded_interest_rate is null then 0 else
+	calculate_payment(compounded_interest_rate,
+					  coalesce(quantity,0),
+					  case when previous_payment_date is null then interest_accrual_date else previous_payment_date end,
+					  interest_accrual_date,
+					  day_count_convention) end,0) as compounded_interest_income,
+transaction_type
+from citi_all_transactions t0 join series_names t00 on (t0.isin = t00.isin) join advances_schedule t1 on (t00.series_number = t1.series_number and t1.id = '{param0}') join advances_info t2 on (t00.series_number = t2.series_number)
+    where (transaction_type = 'DVP' or
+		  (transaction_type = 'DF' and counterparty != 'EUROCLEAR 21235' and locate('CAEV/PARI', counterparty) = 0 and locate('DUMMY SEDOL CLEANUP', counterparty) = 0 and locate('/CAEV/REDM', counterparty) = 0))
+          and settlement_date > coalesce(previous_payment_date, 0)
+          and settlement_date <= loan_payment_date
+          order by settlement_date
+) a;

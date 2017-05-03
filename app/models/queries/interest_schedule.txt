@@ -16,7 +16,8 @@ SELECT
                     `series`.`series_number` AS `series_number`,
                         `citi`.`settlement_date` AS `settlement_date`,
                         `citi`.`transaction_type` AS `transaction_type`,
-                        `citi`.`quantity` AS `quantity`
+                        `citi`.`quantity` AS `quantity`,
+                        counterparty
                 FROM
                     (`flexfunds`.`citi_all_transactions` `citi`
                 JOIN `flexfunds`.`series_names` `series`)
@@ -36,4 +37,3 @@ SELECT
         `flexfunds`.`advances_schedule` `a`
 	where series_number= '{param0}'
     ORDER BY `a`.`series_number` , `a`.`loan_payment_date`
-    
