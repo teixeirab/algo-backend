@@ -12,6 +12,8 @@ describe('service tests', function() {
     'QuickBookService',
     'TheoremBalanceSheetModel',
     'SeriesProductInformationModel',
+    'QBCustomerModel',
+    'QBInvoiceModel',
     'FlexFundsDB'
   ]
   const formatDate = (date) => {
@@ -157,7 +159,7 @@ describe('service tests', function() {
           done()
         })
     });
-    it.only('create item', function (done) {
+    it('create item', function (done) {
       vars['QuickBookService']
         .createItem({
           qb_account: 'flexfunds',
@@ -177,48 +179,36 @@ describe('service tests', function() {
           done()
         })
     });
-    it('create invoices', function (done) {
-      const invoice = {
-        "Line": [{
-            "Amount": 6000,
-            "DetailType": "SalesItemLineDetail",
-            "SalesItemLineDetail": {
-              "ItemRef": {
-                "value": "17"
-              },
-              "ClassRef": {
-                "value": "3400000000000687253"
-              },
-              // "UnitPrice": 6000,
-              "Qty": 1
-            }
-          },
-          // {
-          //   "Amount": 6000,
-          //   "DetailType": "SubTotalLineDetail",
-          //   "SubTotalLineDetail": {}
-          // }
-        ],
-        "CustomerRef": {
-          "value": "59"
-        },
-        "CustomerMemo": {
-          "value": "test memo"
-        },
-        CurrencyRef: {
-          value: 'CNY'
-        }
-      }
-      vars['QuickBookService']
-        .createInvoice(invoice)
-        .then((createdInvoice) => {
-          console.log('res', JSON.stringify(createdInvoice, undefined, 2))
-          done();
-        })
-        .catch((err) => {
-          console.log(JSON.stringify(err, undefined, 2))
-          done()
-        })
+    it.only('create invoices', function (done) {
+      helper.batchCreateInstances([
+        ['QBInvoiceTypeItemModel', [
+          {invoice_type: 'FUNDS', item_id: 1, item_amount: 100},
+          {invoice_type: 'FUNDS', item_id: 2, item_amount: 100},
+          {invoice_type: 'WRAPPERS', item_id: 3, item_amount: 100}
+        ]],
+        ['QBCustomerModel', [
+          {id: 2, qb_account: 'test', display_name: 'kc', currency_code: 'USD'},
+          {id: 3, qb_account: 'flexfunds', display_name: '0.9035172225072845', currency_code: 'AUD', email: 'kata.choi@gmail.com'}
+        ]]
+      ], () => {
+        vars['QuickBookService']
+          .generateSetUpInvoice({
+            customer_name: '0.9035172225072845',
+            product_type: 'Funds'
+          })
+          .then((createdInvoice) => {
+            console.log(createdInvoice)
+            vars['QBInvoiceModel'].findAll().then((invoices) => {
+              assert.equal(1, invoices.length)
+              console.log(JSON.stringify(invoices[0].toJSON()))
+              done();
+            })
+          })
+          .catch((err) => {
+            console.log(JSON.stringify(err, undefined, 2))
+            done()
+          })
+      })
     });
   });
 });

@@ -1,9 +1,20 @@
 'use strict'
 const async      = require('async')
 const _          = require('lodash')
+const moment     = require('moment')
 const QuickBooks = require('node-quickbooks')
 
-module.exports = function(app, Configs, QBCustomerModel, QBClassModel, QBItemModel) {
+module.exports = function(
+  app,
+  Configs,
+  QBCustomerModel,
+  QBClassModel,
+  QBItemModel,
+  QBInvoiceTypeItemModel,
+  QBInvoiceModel) {
+
+  const that = this
+
   this.getQBO = (config) => {
     return new QuickBooks(
       config.consumerKey,
@@ -20,22 +31,69 @@ module.exports = function(app, Configs, QBCustomerModel, QBClassModel, QBItemMod
     const qbAccount = params.qb_account
     const qbo = this.getQBO(Configs.quickbooks[qbAccount])
     return new Promise((resolve, reject) => {
-      qbo.createInvoice(params.invoice, (err, result) => {
-        if(err) {
-          return reject(err)
+      params.invoice.CustomerMemo = {
+        value: 'test memo'
+      }
+      const currencyCode = _.get(params, 'invoice.CurrencyRef.value')
+      const twoWeekAgo = moment().subtract(2, 'weeks').format('YYYY-MM-DD')
+      qbo.findExchangeRates(
+        `where sourcecurrencycode='${currencyCode}' and asofdate>'${twoWeekAgo}'`,
+        (err, rateData) => {
+          if (err || !_.get(rateData, 'QueryResponse.ExchangeRate')) {
+            return reject(err || {err: 'exchange rate not found'})
+          }
+          params.invoice.ExchangeRate = rateData.QueryResponse.ExchangeRate.pop().Rate
+          params.invoice.Line.forEach((line) => {
+            line.Amount /= params.invoice.ExchangeRate
+          })
+          qbo.createInvoice(params.invoice, (err, result) => {
+            if(err) {
+              return reject(err)
+            }
+            QBInvoiceModel.create({
+              id           : result.Id,
+              qb_account   : qbAccount,
+              customer_id  : _.get(result, 'CustomerRef.value'),
+              doc_num      : result.DocNumber,
+              total_amount : result.TotalAmt,
+              currency_code: _.get(result, 'CurrencyRef.value'),
+              exchange_rate: result.ExchangeRate,
+              due_date     : result.DueDate,
+              txn_date     : result.TxnDate,
+              email_status : result.EmailStatus,
+              active       : result.Active
+            }).then((invoice) => {
+              qbo.sendInvoicePdf(result.Id, (err, result) => {
+                if (err) {
+                  return reject(err)
+                }
+                invoice.email_status = result.EmailStatus
+                invoice.save().then(() => {
+                  resolve(result)
+                })
+              })
+            }).catch((err) => {
+              reject(err)
+            })
+          })
         }
-        resolve(result)
-      })
+      )
     })
   }
 
   this.generateSetUpInvoice = function(params) {
     const customer_name = params.customer_name
-    const product_type = params.product_type
+    const product_type = params.product_type.toUpperCase()
+
     return new Promise((resolve, reject) => {
       async.waterfall([
         (cb) => {
-          QBCustomerModel.findOne({display_name: customer_name}).then((customer) => {
+          QBCustomerModel.findOne({
+            where: {
+              qb_account: 'flexfunds',
+              display_name: customer_name
+            }
+          }).then((customer) => {
             if(!customer) {
               return cb({err: `customer ${customer_name} not found`})
             }
@@ -43,13 +101,56 @@ module.exports = function(app, Configs, QBCustomerModel, QBClassModel, QBItemMod
           })
         },
         (customer, cb) => {
-
+          QBInvoiceTypeItemModel.findAll({
+            where: {
+              invoice_type: product_type
+            }
+          }).then((items) => {
+            if (!items.length) {
+              return cb({err: `no items found for product type ${product_type}`})
+            }
+            let lines = items.map((item) => {
+              return {
+                Amount: item.item_amount,
+                DetailType: "SalesItemLineDetail",
+                SalesItemLineDetail: {
+                  ItemRef: {
+                    value: item.item_id
+                  }
+                }
+              }
+            })
+            let invoice = {
+              Line: lines,
+              CustomerRef: {
+                value: customer.id
+              },
+              CurrencyRef: {
+                value: customer.currency_code
+              },
+              BillEmail: {
+                Address: customer.email
+              },
+              EmailStatus: 'NeedToSend'
+            }
+            cb(undefined, invoice)
+          })
+        },
+        (invoice, cb) => {
+          that.createInvoice({
+            qb_account: 'flexfunds',
+            invoice: invoice
+          }).then((result) => {
+            cb(undefined, result)
+          }).catch((err) => {
+            cb(err)
+          })
         }
-      ], (err) => {
+      ], (err, result) => {
         if(err) {
           return reject(err)
         }
-        resolve()
+        resolve(result)
       })
     })
   }

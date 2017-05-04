@@ -39,6 +39,7 @@
         "QBClassModel": "./models/qb_class",
         "QBItemModel": "./models/qb_item",
         "QBInvoiceTypeItemModel": "./models/qb_invoice_type_item",
+        "QBInvoiceModel": "./models/qb_invoice",
 
         "CommonService": "./services/common",
         "SqlService": "./services/sql",
