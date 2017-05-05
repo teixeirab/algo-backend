@@ -32,9 +32,6 @@ module.exports = function(
     const qbConfig = Configs.quickbooks[qbAccountKey]
     const qbo = this.getQBO(qbConfig)
     return new Promise((resolve, reject) => {
-      params.invoice.CustomerMemo = {
-        value: 'test memo'
-      }
       const currencyCode = _.get(params, 'invoice.CurrencyRef.value')
       const twoWeekAgo = moment().subtract(2, 'weeks').format('YYYY-MM-DD')
       qbo.findExchangeRates(
