@@ -3,7 +3,7 @@
 module.exports = function(FlexFundsDB, Sequelize) {
   return FlexFundsDB.define('series_product_information', {
     series_number: {
-      type: Sequelize.INTEGER(50),
+      type: Sequelize.STRING,
       allowNull: false,
       primaryKey: true
     },

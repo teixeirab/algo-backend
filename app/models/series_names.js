@@ -14,7 +14,7 @@ module.exports = function(FlexFundsDB, Sequelize) {
       allowNull: false
     },
     series_number: {
-      type: Sequelize.INTEGER(11),
+      type: Sequelize.STRING,
       allowNull: false
     },
     series_name: {

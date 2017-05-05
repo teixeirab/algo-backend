@@ -8,7 +8,7 @@ module.exports = function(FlexFundsDB, Sequelize) {
       primaryKey: true
     },
     series_number: {
-      type: Sequelize.INTEGER(11),
+      type: Sequelize.STRING,
       allowNull: false,
       primaryKey: true
     },
