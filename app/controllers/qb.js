@@ -63,18 +63,18 @@ module.exports = function(Configs, QuickBookService) {
       }
       const params = req.body
       let results = []
-      async.eachSeries(['flexfunds', 'IA'], (qbAccount, cb) => {
-        const qbConfig = Configs.quickbooks[qbAccount]
+      async.eachSeries(['flexfunds', 'ia'], (qbAccountKey, cb) => {
+        const qbConfig = Configs.quickbooks[qbAccountKey]
         if (!qbConfig || !qbConfig.account) {
           return cb()
         }
-        params.qb_account = qbAccount
+        params.qb_account_key = qbAccountKey
         QuickBookService.createCustomer(params).then((customer) => {
           results.push(customer)
           cb(undefined)
         }).catch(cb)
       }, (err) => {
-        if(err) {
+        if (err) {
           return res.status(403).send(err)
         }
         res.status(200).send(results)

@@ -217,17 +217,17 @@ describe('service tests', function() {
       });
     });
     describe.only('api', function () {
-      describe('invoice', function () {
+      describe.only('invoice', function () {
         it('generate setup invoice', function (done) {
           helper.batchCreateInstances([
             ['QBInvoiceTypeItemModel', [
-              {invoice_type: 'FUNDS', item_id: 1, item_amount: 100},
-              {invoice_type: 'FUNDS', item_id: 2, item_amount: 100},
-              {invoice_type: 'WRAPPERS', item_id: 3, item_amount: 100}
+              {invoice_type: 'FUNDS', qb_account: 'kata.choi@gmail.com', item_id: 1, item_amount: 100},
+              {invoice_type: 'FUNDS', qb_account: 'kata.choi@gmail.com', item_id: 2, item_amount: 100},
+              {invoice_type: 'WRAPPERS', qb_account: 'kata.choi@gmail.com', item_id: 3, item_amount: 100}
             ]],
             ['QBCustomerModel', [
               {id: 2, qb_account: 'test', display_name: 'kc', currency_code: 'USD'},
-              {id: 3, qb_account: 'flexfunds', display_name: '0.9035172225072845', currency_code: 'AUD', email: 'kata.choi@gmail.com'}
+              {id: 3, qb_account: 'kata.choi@gmail.com', display_name: '0.9035172225072845', currency_code: 'AUD', email: 'kata.choi@gmail.com'}
             ]]
           ], () => {
             request(app)
@@ -244,13 +244,13 @@ describe('service tests', function() {
           })
         });
       });
-      describe.only('customer', function () {
+      describe('customer', function () {
         it('create customer', function (done) {
           request(app)
             .post('/api/panel/qb/customer')
             .set('internal-key', '123')
             .send({
-              display_name: 'test5',
+              display_name: 'test7',
               given_name: 'test',
               family_name: 'test',
               fully_qualified_name: 'test1',

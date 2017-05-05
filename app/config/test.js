@@ -24,8 +24,15 @@ module.exports = {
       useSandbox:      false,
       debug:           false
     },
-    'IA': {
-
+    'ia': {
+      // account: 'kata.choi@gmail.com',
+      // consumerKey:     'qyprdm8eZLCEGTfFvRbw9wSyPytiU7',
+      // consumerSecret:  'yepfrjTSdoERKRn4LhP0aFBxxg6swbIR91r21Cno',
+      // token:           'lvprd8eTFSshcrKQS4mAUBaF3UoxDR5l1fgCYoo4b0I6GevB',
+      // tokenSecret:     'pje9ZvlSEnATZoqCGGU6E2LPoNn9FauzkmSWSCNU',
+      // realmId:         123145811581804,
+      // useSandbox:      false,
+      // debug:           false
     }
   }
   // dbLogging: console.log

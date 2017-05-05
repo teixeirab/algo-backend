@@ -5,6 +5,11 @@ module.exports = function(FlexFundsDB, Sequelize) {
       primaryKey: true,
       allowNull: false
     },
+    qb_account: {
+      type: Sequelize.STRING,
+      primaryKey: true,
+      allowNull: false
+    },
     item_id: {
       type: Sequelize.STRING,
       primaryKey: true,

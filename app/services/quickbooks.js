@@ -28,8 +28,9 @@ module.exports = function(
   }
 
   this.createInvoice = function(params) {
-    const qbAccount = params.qb_account
-    const qbo = this.getQBO(Configs.quickbooks[qbAccount])
+    const qbAccountKey = params.qb_account_key
+    const qbConfig = Configs.quickbooks[qbAccountKey]
+    const qbo = this.getQBO(qbConfig)
     return new Promise((resolve, reject) => {
       params.invoice.CustomerMemo = {
         value: 'test memo'
@@ -52,7 +53,7 @@ module.exports = function(
             }
             QBInvoiceModel.create({
               id           : result.Id,
-              qb_account   : qbAccount,
+              qb_account   : qbConfig.account,
               customer_id  : _.get(result, 'CustomerRef.value'),
               doc_num      : result.DocNumber,
               total_amount : result.TotalAmt,
@@ -84,13 +85,14 @@ module.exports = function(
   this.generateSetUpInvoice = function(params) {
     const customer_name = params.customer_name
     const product_type = params.product_type.toUpperCase()
-
+    const qbAccountKey = 'flexfunds'
+    const qbConfig = Configs.quickbooks[qbAccountKey]
     return new Promise((resolve, reject) => {
       async.waterfall([
         (cb) => {
           QBCustomerModel.findOne({
             where: {
-              qb_account: 'flexfunds',
+              qb_account: qbConfig.account,
               display_name: customer_name
             }
           }).then((customer) => {
@@ -138,7 +140,7 @@ module.exports = function(
         },
         (invoice, cb) => {
           that.createInvoice({
-            qb_account: 'flexfunds',
+            qb_account_key: qbAccountKey,
             invoice: invoice
           }).then((result) => {
             cb(undefined, result)
@@ -156,8 +158,9 @@ module.exports = function(
   }
 
   this.createCustomer = function(params) {
-    const qbAccount = params.qb_account
-    const qbo = this.getQBO(Configs.quickbooks[qbAccount])
+    const qbAccountKey = params.qb_account_key
+    const qbConfig = Configs.quickbooks[qbAccountKey]
+    const qbo = this.getQBO(qbConfig)
     let newCustomer = {
       GivenName: params.given_name,
       FamilyName: params.family_name,
@@ -184,7 +187,7 @@ module.exports = function(
           return reject(err)
         }
         QBCustomerModel.create({
-          qb_account                         : qbAccount,
+          qb_account                         : qbConfig.account,
           id                                 : result.Id,
           given_name                         : result.GivenName,
           middle_name                        : result.MiddleName,
