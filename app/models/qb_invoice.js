@@ -42,8 +42,8 @@ module.exports = function(FlexFundsDB, Sequelize) {
       type: Sequelize.STRING,
       allowNull: false
     },
-    active: {
-      type: Sequelize.BOOLEAN,
+    einvoice_status: {
+      type: Sequelize.STRING,
       allowNull: true
     },
     dt_added: {

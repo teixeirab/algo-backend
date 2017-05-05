@@ -52,17 +52,17 @@ module.exports = function(
               return reject(err)
             }
             QBInvoiceModel.create({
-              id           : result.Id,
-              qb_account   : qbConfig.account,
-              customer_id  : _.get(result, 'CustomerRef.value'),
-              doc_num      : result.DocNumber,
-              total_amount : result.TotalAmt,
-              currency_code: _.get(result, 'CurrencyRef.value'),
-              exchange_rate: result.ExchangeRate,
-              due_date     : result.DueDate,
-              txn_date     : result.TxnDate,
-              email_status : result.EmailStatus,
-              active       : result.Active
+              id              : result.Id,
+              qb_account      : qbConfig.account,
+              customer_id     : _.get(result, 'CustomerRef.value'),
+              doc_num         : result.DocNumber,
+              total_amount    : result.TotalAmt,
+              currency_code   : _.get(result, 'CurrencyRef.value'),
+              exchange_rate   : result.ExchangeRate,
+              due_date        : result.DueDate,
+              txn_date        : result.TxnDate,
+              email_status    : result.EmailStatus,
+              einvoice_status : result.EInvoiceStatus
             }).then((invoice) => {
               qbo.sendInvoicePdf(result.Id, (err, result) => {
                 if (err) {
