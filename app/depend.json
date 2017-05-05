@@ -51,9 +51,11 @@
         "UserController": "./controllers/user",
         "DataController": "./controllers/data",
         "SeriesController": "./controllers/series",
+        "QBController": "./controllers/qb",
 
         "Route": "./routes",
         "SeriesRoute": "./routes/series",
+        "QBRoute": "./routes/qb",
 
         "Utils": "./utils",
 

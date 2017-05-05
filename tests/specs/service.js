@@ -3,6 +3,7 @@
 var async = require('async');
 var assert = require('assert');
 var moment = require('moment');
+var request = require('supertest')
 var helper = require('../../tests/helper')
 global.app = require('../../app/setup')
 var _ = require('lodash');
@@ -19,6 +20,9 @@ describe('service tests', function() {
   const formatDate = (date) => {
     return moment(date).format('YYYY-MM-DD')
   }
+  before(function(done) {
+    app.run(done)
+  })
   beforeEach(function(done) {
     vars.forEach(function(dep) {
       vars[dep] = app.summon.get(dep)
@@ -117,23 +121,24 @@ describe('service tests', function() {
     });
   });
   describe.only('qb tests', function () {
-    it('create customer', function (done) {
-      const params = {
-        qb_account: 'flexfunds',
-        email: 'kata.choi@gmail.com',
-        given_name: 'kata',
-        family_name: 'choi',
-        fully_qualified_name: 'kc',
-        company_name: 'comp',
-        display_name: '' + Math.random(100000),
-        print_on_check_name: 'kc',
-        bill_addr_line_1: 'addr line 1',
-        bill_addr_city: 'city',
-        bill_addr_country_sub_division_code: '1111',
-        bill_addr_postal_code: '123',
-        currency_code: 'AUD'
-      }
-      vars['QuickBookService']
+    describe('service', function () {
+      it('create customer', function (done) {
+        const params = {
+          qb_account: 'flexfunds',
+          email: 'kata.choi@gmail.com',
+          given_name: 'kata',
+          family_name: 'choi',
+          fully_qualified_name: 'kc',
+          company_name: 'comp',
+          display_name: '' + Math.random(100000),
+          print_on_check_name: 'kc',
+          bill_addr_line_1: 'addr line 1',
+          bill_addr_city: 'city',
+          bill_addr_country_sub_division_code: '1111',
+          bill_addr_postal_code: '123',
+          currency_code: 'AUD'
+        }
+        vars['QuickBookService']
         .createCustomer(params)
         .then((result) => {
           console.log(JSON.stringify(result, undefined, 2))
@@ -143,9 +148,9 @@ describe('service tests', function() {
           console.log(JSON.stringify(err))
           done()
         })
-    });
-    it('create class', function (done) {
-      vars['QuickBookService']
+      });
+      it('create class', function (done) {
+        vars['QuickBookService']
         .createClass({
           qb_account: 'flexfunds',
           series_number: Math.random()
@@ -158,9 +163,9 @@ describe('service tests', function() {
           console.log(JSON.stringify(err))
           done()
         })
-    });
-    it('create item', function (done) {
-      vars['QuickBookService']
+      });
+      it('create item', function (done) {
+        vars['QuickBookService']
         .createItem({
           qb_account: 'flexfunds',
           name: Math.random(),
@@ -178,37 +183,92 @@ describe('service tests', function() {
           console.log(JSON.stringify(err))
           done()
         })
-    });
-    it.only('create invoices', function (done) {
-      helper.batchCreateInstances([
-        ['QBInvoiceTypeItemModel', [
-          {invoice_type: 'FUNDS', item_id: 1, item_amount: 100},
-          {invoice_type: 'FUNDS', item_id: 2, item_amount: 100},
-          {invoice_type: 'WRAPPERS', item_id: 3, item_amount: 100}
-        ]],
-        ['QBCustomerModel', [
-          {id: 2, qb_account: 'test', display_name: 'kc', currency_code: 'USD'},
-          {id: 3, qb_account: 'flexfunds', display_name: '0.9035172225072845', currency_code: 'AUD', email: 'kata.choi@gmail.com'}
-        ]]
-      ], () => {
-        vars['QuickBookService']
-          .generateSetUpInvoice({
-            customer_name: '0.9035172225072845',
-            product_type: 'Funds'
-          })
-          .then((createdInvoice) => {
-            console.log(createdInvoice)
-            vars['QBInvoiceModel'].findAll().then((invoices) => {
-              assert.equal(1, invoices.length)
-              console.log(JSON.stringify(invoices[0].toJSON()))
-              done();
+      });
+      it('create invoices', function (done) {
+        helper.batchCreateInstances([
+          ['QBInvoiceTypeItemModel', [
+            {invoice_type: 'FUNDS', item_id: 1, item_amount: 100},
+            {invoice_type: 'FUNDS', item_id: 2, item_amount: 100},
+            {invoice_type: 'WRAPPERS', item_id: 3, item_amount: 100}
+          ]],
+          ['QBCustomerModel', [
+            {id: 2, qb_account: 'test', display_name: 'kc', currency_code: 'USD'},
+            {id: 3, qb_account: 'flexfunds', display_name: '0.9035172225072845', currency_code: 'AUD', email: 'kata.choi@gmail.com'}
+          ]]
+        ], () => {
+          vars['QuickBookService']
+            .generateSetUpInvoice({
+              customer_name: '0.9035172225072845',
+              product_type: 'Funds'
             })
+            .then((createdInvoice) => {
+              console.log(createdInvoice)
+              vars['QBInvoiceModel'].findAll().then((invoices) => {
+                assert.equal(1, invoices.length)
+                console.log(JSON.stringify(invoices[0].toJSON()))
+                done();
+              })
+            })
+            .catch((err) => {
+              console.log(JSON.stringify(err, undefined, 2))
+              done()
+            })
+        })
+      });
+    });
+    describe.only('api', function () {
+      describe('invoice', function () {
+        it('generate setup invoice', function (done) {
+          helper.batchCreateInstances([
+            ['QBInvoiceTypeItemModel', [
+              {invoice_type: 'FUNDS', item_id: 1, item_amount: 100},
+              {invoice_type: 'FUNDS', item_id: 2, item_amount: 100},
+              {invoice_type: 'WRAPPERS', item_id: 3, item_amount: 100}
+            ]],
+            ['QBCustomerModel', [
+              {id: 2, qb_account: 'test', display_name: 'kc', currency_code: 'USD'},
+              {id: 3, qb_account: 'flexfunds', display_name: '0.9035172225072845', currency_code: 'AUD', email: 'kata.choi@gmail.com'}
+            ]]
+          ], () => {
+            request(app)
+              .post('/api/panel/qb/setup-invoice')
+              .set('internal-key', '123')
+              .send({
+                customer_name: '0.9035172225072845',
+                product_type: 'wrappers'
+              })
+              .end((err, res) => {
+                console.log(JSON.stringify(res.body))
+                done()
+              })
           })
-          .catch((err) => {
-            console.log(JSON.stringify(err, undefined, 2))
-            done()
-          })
-      })
+        });
+      });
+      describe.only('customer', function () {
+        it('create customer', function (done) {
+          request(app)
+            .post('/api/panel/qb/customer')
+            .set('internal-key', '123')
+            .send({
+              display_name: 'test5',
+              given_name: 'test',
+              family_name: 'test',
+              fully_qualified_name: 'test1',
+              company_name: 'test1',
+              email: 'kata.choi@gmail.com',
+              bill_addr_line_1: '111',
+              bill_addr_city: '111',
+              bill_addr_country_sub_division_code: '111',
+              bill_addr_postal_code: '111',
+              print_on_check_name: '111',
+              currency_code: 'aud'
+            })
+            .end((err, res) => {
+              console.log(JSON.stringify(res.body))
+              done()
+            })
+        });
+      });
     });
   });
 });

@@ -1,6 +1,8 @@
 module.exports = {
   dbHost: 'localhost',
   dialect: 'sqlite',
+  internalKey: '123',
+  email: '',
   quickbooks: {
     // 'flexfunds': {
     //   account: 'kata.choi@gmail.com',

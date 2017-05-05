@@ -159,19 +159,19 @@ module.exports = function(
     const qbAccount = params.qb_account
     const qbo = this.getQBO(Configs.quickbooks[qbAccount])
     let newCustomer = {
+      GivenName: params.given_name,
+      FamilyName: params.family_name,
+      FullyQualifiedName: params.fully_qualified_name,
+      DisplayName: params.display_name,
+      CompanyName: params.company_name,
+      PrimaryEmailAddr: {
+        Address: params.email
+      },
       BillAddr: {
         Line1: params.bill_addr_line_1,
         City: params.bill_addr_city,
         CountrySubDivisionCode: params.bill_addr_country_sub_division_code,
         PostalCode: params.bill_addr_postal_code
-      },
-      GivenName: params.given_name,
-      FamilyName: params.family_name,
-      FullyQualifiedName: params.fully_qualified_name,
-      CompanyName: params.company_name,
-      DisplayName: params.display_name,
-      PrimaryEmailAddr: {
-        Address: params.email
       },
       PrintOnCheckName: params.print_on_check_name,
       CurrencyRef: {
@@ -186,7 +186,6 @@ module.exports = function(
         QBCustomerModel.create({
           qb_account                         : qbAccount,
           id                                 : result.Id,
-          email                              : _.get(result, 'PrimaryEmailAddr.Address'),
           given_name                         : result.GivenName,
           middle_name                        : result.MiddleName,
           family_name                        : result.FamilyName,
@@ -194,12 +193,13 @@ module.exports = function(
           company_name                       : result.CompanyName,
           display_name                       : result.DisplayName,
           print_on_check_name                : result.PrintOnCheckName,
+          active                             : result.Active,
+          email                              : _.get(result, 'PrimaryEmailAddr.Address'),
           bill_addr_line1                    : _.get(result, 'BillAddr.Line1'),
           bill_addr_city                     : _.get(result, 'BillAddr.City'),
           bill_addr_country_sub_division_code: _.get(result, 'BillAddr.CountrySubDivisionCode'),
           bill_addr_postal_code              : _.get(result, 'BillAddr.PostalCode'),
-          currency_code                      : _.get(result, 'CurrencyRef.value'),
-          active                             : result.Active
+          currency_code                      : _.get(result, 'CurrencyRef.value')
         }).then((data) => {
           resolve(data)
         }).catch((err) => {
