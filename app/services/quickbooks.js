@@ -130,7 +130,8 @@ module.exports = function(
               BillEmail: {
                 Address: customer.email
               },
-              EmailStatus: 'NeedToSend'
+              EmailStatus: 'NeedToSend',
+              DocNumber: new Date().getTime()
             }
             cb(undefined, invoice)
           })
