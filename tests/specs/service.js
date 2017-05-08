@@ -153,7 +153,7 @@ describe('service tests', function() {
         vars['QuickBookService']
         .createClass({
           qb_account: 'flexfunds',
-          series_number: Math.random()
+          name: 'Fund'
         })
         .then((result) => {
           console.log(JSON.stringify(result, undefined, 2))
@@ -216,23 +216,31 @@ describe('service tests', function() {
         })
       });
     });
-    describe.only('api', function () {
-      describe.only('invoice', function () {
-        it('generate setup invoice', function (done) {
+    describe('api', function () {
+      describe('invoice', function () {
+        it.only('generate setup invoice', function (done) {
           helper.batchCreateInstances([
+            ['QBClassModel', [
+              {
+                id: "5000000000000027881",
+                qb_account: "flexfunds",
+                name: 'Fund',
+                fully_qualified_name: 'Fund'
+              }
+            ]],
             ['QBItemModel', [
               {id: 1, name: 'name', qb_account: 'kata.choi@gmail.com', description: 'item test desc'},
               {id: 2, name: 'name', qb_account: 'kata.choi@gmail.com', description: 'item test desc'},
               {id: 3, name: 'name', qb_account: 'kata.choi@gmail.com', description: 'item test desc'}
             ]],
             ['QBInvoiceTypeItemModel', [
-              {invoice_type: 'FUNDS', qb_account: 'kata.choi@gmail.com', item_id: 1, item_amount: 100},
-              {invoice_type: 'FUNDS', qb_account: 'kata.choi@gmail.com', item_id: 2, item_amount: 100},
-              {invoice_type: 'WRAPPERS', qb_account: 'kata.choi@gmail.com', item_id: 3, item_amount: 100}
+              {invoice_type: 'FUNDS', qb_account: 'kata.choi@gmail.com', item_id: 1, item_amount: 100, item_currency: 'EUR'},
+              {invoice_type: 'FUNDS', qb_account: 'kata.choi@gmail.com', item_id: 2, item_amount: 100, item_currency: 'EUR'},
+              {invoice_type: 'WRAPPERS', qb_account: 'kata.choi@gmail.com', item_id: 3, item_amount: 100, item_currency: 'EUR'}
             ]],
             ['QBCustomerModel', [
               {id: 2, qb_account: 'test', display_name: 'kc', currency_code: 'USD'},
-              {id: 3, qb_account: 'kata.choi@gmail.com', display_name: '0.9035172225072845', currency_code: 'AUD', email: 'kata.choi@gmail.com'}
+              {id: 3, qb_account: 'kata.choi@gmail.com', display_name: '0.9035172225072845', currency_code: 'USD', email: 'kata.choi@gmail.com'}
             ]]
           ], () => {
             request(app)
@@ -240,7 +248,7 @@ describe('service tests', function() {
               .set('internal-key', '123')
               .send({
                 customer_name: '0.9035172225072845',
-                product_type: 'wrappers'
+                product_type: 'funds'
               })
               .end((err, res) => {
                 console.log(JSON.stringify(res.body))

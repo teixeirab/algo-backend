@@ -27,55 +27,80 @@ module.exports = function(
     )
   }
 
-  this.createInvoice = function(params) {
-    const qbAccountKey = params.qb_account_key
-    const qbConfig = Configs.quickbooks[qbAccountKey]
+  this.calcExchangeRate = function(qb_account_key, fromCcy, toCcy) {
+    const qbConfig = Configs.quickbooks[qb_account_key]
     const qbo = this.getQBO(qbConfig)
     return new Promise((resolve, reject) => {
-      const currencyCode = _.get(params, 'invoice.CurrencyRef.value')
       const twoWeekAgo = moment().subtract(2, 'weeks').format('YYYY-MM-DD')
       qbo.findExchangeRates(
-        `where sourcecurrencycode='${currencyCode}' and asofdate>'${twoWeekAgo}'`,
+        `where sourcecurrencycode in ('${fromCcy}', '${toCcy}') and asofdate>'${twoWeekAgo}'`,
         (err, rateData) => {
           if (err || !_.get(rateData, 'QueryResponse.ExchangeRate')) {
             return reject(err || {err: 'exchange rate not found'})
           }
-          params.invoice.ExchangeRate = rateData.QueryResponse.ExchangeRate.pop().Rate
-          params.invoice.Line.forEach((line) => {
-            line.Amount /= params.invoice.ExchangeRate
+          let rates = rateData.QueryResponse.ExchangeRate
+          let sourceRates = _.remove(rates, (rate) => {
+            return rate.SourceCurrencyCode === fromCcy
           })
-          qbo.createInvoice(params.invoice, (err, result) => {
-            if(err) {
-              return reject(err)
-            }
-            QBInvoiceModel.create({
-              id              : result.Id,
-              qb_account      : qbConfig.account,
-              customer_id     : _.get(result, 'CustomerRef.value'),
-              doc_num         : result.DocNumber,
-              total_amount    : result.TotalAmt,
-              currency_code   : _.get(result, 'CurrencyRef.value'),
-              exchange_rate   : result.ExchangeRate,
-              due_date        : result.DueDate,
-              txn_date        : result.TxnDate,
-              email_status    : result.EmailStatus,
-              einvoice_status : result.EInvoiceStatus
-            }).then((invoice) => {
-              qbo.sendInvoicePdf(result.Id, (err, result) => {
-                if (err) {
-                  return reject(err)
-                }
-                invoice.email_status = result.EmailStatus
-                invoice.save().then(() => {
-                  resolve(result)
-                })
-              })
-            }).catch((err) => {
-              reject(err)
-            })
+          sourceRates.sort((a, b) => {
+            return new Date(b.AsOfDate) - new Date(a.AsOfDate)
           })
+          rates.sort((a, b) => {
+            return new Date(b.AsOfDate) - new Date(a.AsOfDate)
+          })
+          let latestSourceRate = sourceRates[0]
+          let latestTargetRate = _.find(rates, (rate) => {
+            return latestSourceRate.AsOfDate === rate.AsOfDate
+          })
+          let exchangeRate = latestSourceRate.Rate / latestTargetRate.Rate
+          resolve(exchangeRate)
         }
       )
+    })
+  }
+
+  this.createInvoice = function(params) {
+    const qbAccountKey = params.qb_account_key
+    const qbConfig = Configs.quickbooks[qbAccountKey]
+    const fromCurrency = params.from_currency
+    const toCurrency = _.get(params, 'invoice.CurrencyRef.value')
+    const qbo = this.getQBO(qbConfig)
+    return new Promise((resolve, reject) => {
+      that.calcExchangeRate(qbAccountKey, fromCurrency, toCurrency).then((rate) => {
+        params.invoice.Line.forEach((line) => {
+          line.Amount *= rate
+        })
+        qbo.createInvoice(params.invoice, (err, result) => {
+          if(err) {
+            return reject(err)
+          }
+          QBInvoiceModel.create({
+            id              : result.Id,
+            qb_account      : qbConfig.account,
+            customer_id     : _.get(result, 'CustomerRef.value'),
+            doc_num         : result.DocNumber,
+            total_amount    : result.TotalAmt,
+            currency_code   : _.get(result, 'CurrencyRef.value'),
+            exchange_rate   : result.ExchangeRate,
+            due_date        : result.DueDate,
+            txn_date        : result.TxnDate,
+            email_status    : result.EmailStatus,
+            einvoice_status : result.EInvoiceStatus
+          }).then((invoice) => {
+            qbo.sendInvoicePdf(result.Id, (err, result) => {
+              if (err) {
+                return reject(err)
+              }
+              invoice.email_status = result.EmailStatus
+              invoice.save().then(() => {
+                resolve(result)
+              })
+            })
+          }).catch((err) => {
+            reject(err)
+          })
+        })
+      })
     })
   }
 
@@ -100,6 +125,28 @@ module.exports = function(
           })
         },
         (customer, cb) => {
+          const classMaps = {
+            FUNDS: 'Fund',
+            WRAPPERS: 'Wrapper',
+            LOANS: 'Loan',
+            HYBRIDS: 'Hybrid'
+          }
+          const className = classMaps[product_type]
+          if (!className) {
+            return cb({err: `invalid product type ${product_type}`})
+          }
+          QBClassModel.findOne({
+            where: {
+              fully_qualified_name: className
+            }
+          }).then((cls) => {
+            if(!cls) {
+              return cb({err: `invalid product type ${product_type}`})
+            }
+            cb(undefined, customer, cls)
+          })
+        },
+        (customer, cls, cb) => {
           QBInvoiceTypeItemModel.findAll({
             where: {
               invoice_type: product_type
@@ -122,6 +169,7 @@ module.exports = function(
               })
             }, () => {
               let lines = items.map((item) => {
+                console.log(cls.id)
                 return {
                   Amount: item.item_amount,
                   DetailType: "SalesItemLineDetail",
@@ -129,6 +177,9 @@ module.exports = function(
                   SalesItemLineDetail: {
                     ItemRef: {
                       value: item.item_id
+                    },
+                    ClassRef: {
+                      value: cls.id
                     },
                     Qty: 1
                   }
@@ -139,6 +190,10 @@ module.exports = function(
                 CustomerRef: {
                   value: customer.id
                 },
+                //when this field is null, it defaults to customer's currency_code
+                //but when it is different from customer's currency_code it throws error:
+                //====Business Validation Error: The currency of the transaction is invalid for customer/vendor/account.====
+                //so setting this field seems not necessary so far.
                 CurrencyRef: {
                   value: customer.currency_code
                 },
@@ -146,16 +201,17 @@ module.exports = function(
                   Address: customer.email
                 },
                 EmailStatus: 'NeedToSend',
-                DocNumber: new Date().getTime()
+                // DocNumber: new Date().getTime()
               }
-              cb(undefined, invoice)
+              cb(undefined, invoice, items[0].item_currency)
             })
           })
         },
-        (invoice, cb) => {
+        (invoice, currency_code, cb) => {
           that.createInvoice({
             qb_account_key: qbAccountKey,
-            invoice: invoice
+            invoice: invoice,
+            from_currency: currency_code
           }).then((result) => {
             cb(undefined, result)
           }).catch((err) => {
@@ -228,11 +284,11 @@ module.exports = function(
 
   this.createClass = function(params) {
     const qbAccount = params.qb_account
-    const seriesNumber = params.series_number
+    // const seriesNumber = params.series_number
     const qbo = this.getQBO(Configs.quickbooks[qbAccount])
     return new Promise((resolve, reject) => {
       qbo.createClass({
-        Name: `Series ${seriesNumber}`
+        Name: params.name
       }, (err, result) => {
         if (err) {
           return reject(err)
@@ -240,7 +296,7 @@ module.exports = function(
         return QBClassModel.create({
           qb_account: qbAccount,
           id: result.Id,
-          series_number: seriesNumber,
+          // series_number: seriesNumber,
           name: result.Name,
           fully_qualified_name: result.FullyQualifiedName,
           active: result.Active

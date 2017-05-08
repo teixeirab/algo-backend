@@ -19,6 +19,10 @@ module.exports = function(FlexFundsDB, Sequelize) {
       type: Sequelize.STRING,
       allowNull: false
     },
+    item_currency: {
+      type: Sequelize.STRING(3),
+      allowNull: false
+    },
     dt_added: {
       type: Sequelize.DATE,
       defaultValue: new Date(),
