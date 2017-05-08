@@ -85,7 +85,8 @@ module.exports = function(
             due_date        : result.DueDate,
             txn_date        : result.TxnDate,
             email_status    : result.EmailStatus,
-            einvoice_status : result.EInvoiceStatus
+            einvoice_status : result.EInvoiceStatus,
+            balance         : result.Balance
           }).then((invoice) => {
             qbo.sendInvoicePdf(result.Id, (err, result) => {
               if (err) {
