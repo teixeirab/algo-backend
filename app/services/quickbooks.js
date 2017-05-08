@@ -78,7 +78,7 @@ module.exports = function(
             id              : result.Id,
             qb_account      : qbConfig.account,
             customer_id     : _.get(result, 'CustomerRef.value'),
-            doc_num         : result.DocNumber,
+            doc_num         : result.DocNumber || result.Id,
             total_amount    : result.TotalAmt,
             currency_code   : _.get(result, 'CurrencyRef.value'),
             exchange_rate   : result.ExchangeRate,
@@ -169,7 +169,6 @@ module.exports = function(
               })
             }, () => {
               let lines = items.map((item) => {
-                console.log(cls.id)
                 return {
                   Amount: item.item_amount,
                   DetailType: "SalesItemLineDetail",
@@ -201,7 +200,19 @@ module.exports = function(
                   Address: customer.email
                 },
                 EmailStatus: 'NeedToSend',
-                // DocNumber: new Date().getTime()
+                CustomerMemo: {
+                  value: "Make checks payable in USD to: \n " +
+                          "Bank: Bank of America \n" +
+                          "Account Name: FlexFunds ETP LLC \n" +
+                          "Account Number: 898067231257 \n" +
+                          "Routing (wires): 026009593 SWIFT: BOFAUS3N \n" +
+                          "(for all other currencies, please use BOFAUS6S) \n" +
+                          "Address: 495 Brickell Avenue. Miami, FL 33131 \n" +
+                          "\n" +
+                          "If you have any questions concerning this invoice, \n" +
+                          "contact us at accounting@flexfundsetp.com"
+                }
+                // DocNumber: null
               }
               cb(undefined, invoice, items[0].item_currency)
             })
