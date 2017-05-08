@@ -108,32 +108,47 @@ module.exports = function(
             if (!items.length) {
               return cb({err: `no items found for product type ${product_type}`})
             }
-            let lines = items.map((item) => {
-              return {
-                Amount: item.item_amount,
-                DetailType: "SalesItemLineDetail",
-                SalesItemLineDetail: {
-                  ItemRef: {
-                    value: item.item_id
+            async.eachSeries(items, (item, _cb) => {
+              QBItemModel.findOne({
+                where: {
+                  id: item.item_id
+                }
+              }).then((_item) => {
+                if (!_item) {
+                  return _cb()
+                }
+                item.description = _item.description
+                _cb()
+              })
+            }, () => {
+              let lines = items.map((item) => {
+                return {
+                  Amount: item.item_amount,
+                  DetailType: "SalesItemLineDetail",
+                  Description: item.description,
+                  SalesItemLineDetail: {
+                    ItemRef: {
+                      value: item.item_id
+                    }
                   }
                 }
+              })
+              let invoice = {
+                Line: lines,
+                CustomerRef: {
+                  value: customer.id
+                },
+                CurrencyRef: {
+                  value: customer.currency_code
+                },
+                BillEmail: {
+                  Address: customer.email
+                },
+                EmailStatus: 'NeedToSend',
+                DocNumber: new Date().getTime()
               }
+              cb(undefined, invoice)
             })
-            let invoice = {
-              Line: lines,
-              CustomerRef: {
-                value: customer.id
-              },
-              CurrencyRef: {
-                value: customer.currency_code
-              },
-              BillEmail: {
-                Address: customer.email
-              },
-              EmailStatus: 'NeedToSend',
-              DocNumber: new Date().getTime()
-            }
-            cb(undefined, invoice)
           })
         },
         (invoice, cb) => {

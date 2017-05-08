@@ -220,6 +220,11 @@ describe('service tests', function() {
       describe.only('invoice', function () {
         it('generate setup invoice', function (done) {
           helper.batchCreateInstances([
+            ['QBItemModel', [
+              {id: 1, name: 'name', qb_account: 'kata.choi@gmail.com', description: 'item test desc'},
+              {id: 2, name: 'name', qb_account: 'kata.choi@gmail.com', description: 'item test desc'},
+              {id: 3, name: 'name', qb_account: 'kata.choi@gmail.com', description: 'item test desc'}
+            ]],
             ['QBInvoiceTypeItemModel', [
               {invoice_type: 'FUNDS', qb_account: 'kata.choi@gmail.com', item_id: 1, item_amount: 100},
               {invoice_type: 'FUNDS', qb_account: 'kata.choi@gmail.com', item_id: 2, item_amount: 100},
