@@ -46,6 +46,10 @@ module.exports = function(FlexFundsDB, Sequelize) {
       type: Sequelize.STRING,
       allowNull: true
     },
+    balance: {
+      type: Sequelize.DOUBLE,
+      allowNull: true
+    },
     dt_added: {
       type: Sequelize.DATE,
       allowNull: false,
