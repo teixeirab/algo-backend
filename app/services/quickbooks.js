@@ -129,7 +129,8 @@ module.exports = function(
                   SalesItemLineDetail: {
                     ItemRef: {
                       value: item.item_id
-                    }
+                    },
+                    Qty: 1
                   }
                 }
               })
