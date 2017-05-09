@@ -108,6 +108,7 @@ module.exports = function(
   this.generateSetUpInvoice = function(params) {
     const customer_name = params.customer_name
     const product_type = params.product_type.toUpperCase()
+    const series_name = params.series_name
     const qbAccountKey = 'flexfunds'
     const qbConfig = Configs.quickbooks[qbAccountKey]
     return new Promise((resolve, reject) => {
@@ -184,6 +185,10 @@ module.exports = function(
                     Qty: 1
                   }
                 }
+              })
+              lines.unshift({
+                DetailType: 'DescriptionOnly',
+                Description: `Setup Fees for FlexETP ${cls.name} - ${series_name}`
               })
               let invoice = {
                 Line: lines,

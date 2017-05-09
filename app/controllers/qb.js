@@ -18,6 +18,10 @@ module.exports = function(Configs, QuickBookService) {
           options: [/funds|wrappers|loans|hybrids/i]
         },
         errorMessage: 'Invalid product_type'
+      },
+      series_name: {
+        notEmpty: true,
+        errorMessage: 'Require series_name'
       }
     })
     req.getValidationResult().then(function(result) {
