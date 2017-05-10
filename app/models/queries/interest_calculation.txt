@@ -1,15 +1,14 @@
 select
-series_number as 'Series Number',
+id,
 loan_payment_date as 'Loan Payment Date',
 nominal_outstanding as 'Nominal Outstanding',
 simple_interest_income - simple_interest_repayment as 'Simple Interest Income',
 compounded_interest_income - compounded_interest_repayment as 'Compounded Interest Income',
 simple_interest_repayment + compounded_interest_repayment as 'Interest Repayment',
 simple_interest_income + compounded_interest_income as 'Total Interest Income'
-
 from (
 
-select series_number,
+select id,
 loan_payment_date,
 nominal_outstanding,
 coalesce(
@@ -29,6 +28,7 @@ case when compounded_interest_rate is null then 0 else
 
 coalesce(interest_repayment_calc(series_number, loan_payment_date, previous_payment_date, interest_accrual_date, day_count_convention, simple_interest_rate), 0) as simple_interest_repayment,
 coalesce(interest_repayment_calc(series_number, loan_payment_date, previous_payment_date, interest_accrual_date, day_count_convention, compounded_interest_rate), 0) as compounded_interest_repayment
+
 from (
 SELECT
         `a`.`id` AS `id`,
@@ -69,12 +69,10 @@ SELECT
                             AND (`t0`.`series_number` = `a`.`series_number`))),
                 0)) AS nominal_outstanding
     FROM
-		(select p.* from advances_schedule p join
-			(select series_number, min(loan_payment_date) loan_payment_date from (select series_number, datediff(loan_payment_date, curdate()) x, loan_payment_date from advances_schedule) a where x > 0 group by series_number) q on (p.series_number = q.series_number and p.loan_payment_date = q.loan_payment_date)
-		) a
+        `flexfunds`.`advances_schedule` `a`
         join advances_info b on (a.series_number = b.series_number)
-	-- where a.series_number = 19
-    -- where -- a.series_number= '{param0}'
+	-- where a.series_number = 58
+    where a.series_number= '{param0}'
 ) t1
 group by id, series_number, nominal_outstanding, loan_payment_date
 ) t2 order by loan_payment_date;

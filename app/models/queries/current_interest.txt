@@ -26,8 +26,8 @@ case when compounded_interest_rate is null then 0 else
 					  case when previous_payment_date is null then interest_accrual_date else previous_payment_date end,
 					  interest_accrual_date,
 					  day_count_convention) end,0) as compounded_interest_income,
-
-coalesce(interest_repayment(series_number, loan_payment_date, previous_payment_date, interest_accrual_date), 0) as interest_repayment
+coalesce(interest_repayment_calc(series_number, loan_payment_date, previous_payment_date, interest_accrual_date, day_count_convention, simple_interest_rate), 0) as simple_interest_repayment,
+coalesce(interest_repayment_calc(series_number, loan_payment_date, previous_payment_date, interest_accrual_date, day_count_convention, compounded_interest_rate), 0) as compounded_interest_repayment
 from (
 SELECT
         `a`.`id` AS `id`,
