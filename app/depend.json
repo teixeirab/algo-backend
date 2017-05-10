@@ -35,19 +35,27 @@
         "SeriesSubscriptionModel": "./models/series_subscriptions",
         "CitiCashBalancesModel": "./models/citi_cash_balances",
         "QBTransactionListModel": "./models/qb_transaction_list",
+        "QBCustomerModel": "./models/qb_customer",
+        "QBClassModel": "./models/qb_class",
+        "QBItemModel": "./models/qb_item",
+        "QBInvoiceTypeItemModel": "./models/qb_invoice_type_item",
+        "QBInvoiceModel": "./models/qb_invoice",
 
         "CommonService": "./services/common",
         "SqlService": "./services/sql",
         "MailService": "./services/mail",
         "PerformanceService": "./services/performance",
         "LoanService": "./services/loan",
+        "QuickBookService": "./services/quickbooks",
 
         "UserController": "./controllers/user",
         "DataController": "./controllers/data",
         "SeriesController": "./controllers/series",
+        "QBController": "./controllers/qb",
 
         "Route": "./routes",
         "SeriesRoute": "./routes/series",
+        "QBRoute": "./routes/qb",
 
         "Utils": "./utils",
 
