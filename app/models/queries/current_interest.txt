@@ -2,9 +2,9 @@ select
 series_number as 'Series Number',
 loan_payment_date as 'Loan Payment Date',
 nominal_outstanding as 'Nominal Outstanding',
-simple_interest_income - interest_repayment as 'Simple Interest Income',
-compounded_interest_income as 'Compounded Interest Income',
-interest_repayment as 'Interest Repayment',
+simple_interest_income - simple_interest_repayment as 'Simple Interest Income',
+compounded_interest_income - compounded_interest_repayment as 'Compounded Interest Income',
+simple_interest_repayment + compounded_interest_repayment as 'Interest Repayment',
 simple_interest_income + compounded_interest_income as 'Total Interest Income'
 
 from (

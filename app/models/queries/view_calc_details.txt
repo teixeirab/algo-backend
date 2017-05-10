@@ -1,8 +1,8 @@
 select client_reference as 'ID #', settlement_date 'Settlement Date', advance_balance 'Advance Balance',
-simple_interest_repayment 'Simple Interest Repayment',
-coalesce(compounded_interest_repayment,0) 'Simple Interest Repayment',
-coalesce(simple_interest_income,0) 'Compunded Interest Income',
-compounded_interest_income 'Compounded Interest Income',
+coalesce(simple_interest_repayment,0) 'Simple Interest Repayment',
+coalesce(compounded_interest_repayment,0) 'Compounded Interest Repayment',
+coalesce(simple_interest_income,0) 'Simple Interest Income',
+coalesce(compounded_interest_income,0) 'Compounded Interest Income',
 transaction_type 'Transaction Type'
 from (
 select client_reference, settlement_date, coalesce(settled_quantity,0) as advance_balance,
