@@ -1,9 +1,13 @@
 select client_reference as 'ID #', settlement_date 'Settlement Date', advance_balance 'Advance Balance',
-interest_repayment 'Interest Repayment', simple_interest_income 'Simple Interest Income',
+simple_interest_repayment 'Simple Interest Repayment',
+coalesce(compounded_interest_repayment,0) 'Simple Interest Repayment',
+coalesce(simple_interest_income,0) 'Compunded Interest Income',
 compounded_interest_income 'Compounded Interest Income',
 transaction_type 'Transaction Type'
 from (
-select client_reference, settlement_date, coalesce(quantity,0) as advance_balance, coalesce(setltement_amount,0) - coalesce(quantity,0) interest_repayment,
+select client_reference, settlement_date, coalesce(settled_quantity,0) as advance_balance,
+ir_calc(settled_quantity, simple_interest_rate, settlement_date, previous_payment_date, interest_accrual_date, day_count_convention) simple_interest_repayment,
+ir_calc(settled_quantity, compounded_interest_rate, settlement_date, previous_payment_date, interest_accrual_date, day_count_convention) compounded_interest_repayment,
 coalesce(
 case when simple_interest_rate is null then 0 else
 	calculate_payment(simple_interest_rate,
