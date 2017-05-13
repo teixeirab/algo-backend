@@ -63,10 +63,11 @@ module.exports = function(TheoremBalanceSheetModel,
         lastMonthReport = this.getLastMonthReportByCurrentWeek(monthlyData, monthlyData[i])
       }
       let growth = monthlyData[i].nav_per_unit / lastMonthReport.nav_per_unit - 1
+      console.log(monthlyData[i].period, lastMonthReport.period, growth)
       returns.push({
         period: monthlyData[i].period,
         price: monthlyData[i].nav_per_unit,
-        monthlyReturn: Math.round(growth * 1000) / 1000
+        monthlyReturn: Math.round(growth * 100000) / 100000
       })
     }
     return returns
@@ -91,7 +92,7 @@ module.exports = function(TheoremBalanceSheetModel,
       returns.push({
         period: monthlyData[i].period,
         price: monthlyData[i].nav_per_unit,
-        cumulativeReturn: Math.round(growth * 1000) / 1000
+        cumulativeReturn: Math.round(growth * 100000) / 100000
       })
     }
     return returns
@@ -100,7 +101,9 @@ module.exports = function(TheoremBalanceSheetModel,
   this.getLastMonthReportByCurrentWeek = function(weeks, currentWeek) {
     let lastMonth = moment(currentWeek.period).subtract(1, 'month')
     weeks = _.filter(weeks, (week) => {
-      return moment(week.period).isBefore(moment(lastMonth).add(3, 'day'))
+      return moment(week.period).isAfter(moment(lastMonth).subtract(6, 'day')) &&
+             moment(week.period).isBefore(moment(lastMonth).add(6, 'day')) &&
+             moment(week.period).isBefore(moment(currentWeek).startOf('month'))
     })
     if (weeks.length === 0) {
       return currentWeek
