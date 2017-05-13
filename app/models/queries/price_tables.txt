@@ -1,8 +1,9 @@
 select
-last_loan_payment_date 'Last Loan Payment Date',
-settlement_date 'Settlement Date',
+distinct(settlement_date) 'Settlement Date',
+case when special_dates = 'Int Date' then date_add(settlement_date, INTERVAL 15 DAY) else '' end as 'Series Payment Date',
+last_loan_payment_date 'Last Interest Payment Date',
 nav 'NAV',
 price 'Price (%)',
-special_dates 'Special Date'
+special_dates 'Special Dates'
 from series_price_table
 where series_number = {param0}

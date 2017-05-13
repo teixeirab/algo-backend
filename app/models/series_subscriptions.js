@@ -10,7 +10,7 @@ module.exports = function(FlexFundsDB, Sequelize) {
             autoIncrement: true
         },
         series_number: {
-            type: Sequelize.INTEGER(50),
+            type: Sequelize.STRING,
             allowNull: false,
             primaryKey: true
         },

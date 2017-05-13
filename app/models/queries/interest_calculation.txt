@@ -1,0 +1,78 @@
+select
+id,
+loan_payment_date as 'Loan Payment Date',
+nominal_outstanding as 'Nominal Outstanding',
+simple_interest_income - simple_interest_repayment as 'Simple Interest Income',
+compounded_interest_income - compounded_interest_repayment as 'Compounded Interest Income',
+simple_interest_repayment + compounded_interest_repayment as 'Interest Repayment',
+simple_interest_income + compounded_interest_income as 'Total Interest Income'
+from (
+
+select id,
+loan_payment_date,
+nominal_outstanding,
+coalesce(
+case when simple_interest_rate is null then 0 else
+	calculate_payment(simple_interest_rate,
+					  nominal_outstanding,
+					  loan_payment_date,
+					  case when previous_payment_date is null then interest_accrual_date else previous_payment_date end,
+					  day_count_convention) end, 0) as simple_interest_income,
+coalesce(
+case when compounded_interest_rate is null then 0 else
+	calculate_payment(compounded_interest_rate,
+					  nominal_outstanding,
+					  case when previous_payment_date is null then interest_accrual_date else previous_payment_date end,
+					  interest_accrual_date,
+					  day_count_convention) end,0) as compounded_interest_income,
+
+coalesce(interest_repayment_calc(series_number, loan_payment_date, previous_payment_date, interest_accrual_date, day_count_convention, simple_interest_rate), 0) as simple_interest_repayment,
+coalesce(interest_repayment_calc(series_number, loan_payment_date, previous_payment_date, interest_accrual_date, day_count_convention, compounded_interest_rate), 0) as compounded_interest_repayment
+
+from (
+SELECT
+        `a`.`id` AS `id`,
+        a.series_number,
+        `a`.`loan_payment_date`,
+        b.simple_interest_rate,
+        previous_payment_date,
+        day_count_convention,
+        interest_accrual_date,
+        compounded_interest_rate,
+        ((SELECT
+                SUM((CASE
+                        WHEN (`t0`.`transaction_type` = 'DVP') THEN `t0`.`quantity`
+                        WHEN (`t0`.`transaction_type` = 'RVP') THEN -(`t0`.`quantity`)
+                        WHEN (`t0`.`transaction_type` = 'DF' and counterparty != 'EUROCLEAR 21235' and locate('CAEV/PARI', counterparty) = 0 and locate('DUMMY SEDOL CLEANUP', counterparty) = 0 and locate('/CAEV/REDM', counterparty) = 0)  THEN `t0`.`quantity`
+                        ELSE 0
+                    END)) AS `x`
+            FROM
+                (SELECT
+                    `series`.`series_number` AS `series_number`,
+                        `citi`.`settlement_date` AS `settlement_date`,
+                        `citi`.`transaction_type` AS `transaction_type`,
+                        `citi`.`quantity` AS `quantity`,
+                        counterparty
+                FROM
+                    (`flexfunds`.`citi_all_transactions` `citi`
+                JOIN `flexfunds`.`series_names` `series`)
+                WHERE
+                    (CONVERT( `citi`.`isin` USING UTF8) = `series`.`isin`)) `t0`
+            WHERE
+                ((`t0`.`settlement_date` <= `a`.`loan_payment_date`)
+                    AND (`t0`.`series_number` = `a`.`series_number`))) - COALESCE((SELECT
+                        SUM(`t0`.`repayment_amount`) AS `x`
+                    FROM
+                        `flexfunds`.`advances_repayments` `t0`
+                    WHERE
+                        ((`t0`.`repayment_date` < `a`.`loan_payment_date`)
+                            AND (`t0`.`series_number` = `a`.`series_number`))),
+                0)) AS nominal_outstanding
+    FROM
+        `flexfunds`.`advances_schedule` `a`
+        join advances_info b on (a.series_number = b.series_number)
+	-- where a.series_number = 58
+    where a.series_number= '{param0}'
+) t1
+group by id, series_number, nominal_outstanding, loan_payment_date
+) t2 order by loan_payment_date;

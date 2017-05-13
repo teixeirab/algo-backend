@@ -8,7 +8,7 @@ SELECT
                 SUM((CASE
                         WHEN (`t0`.`transaction_type` = 'DVP') THEN `t0`.`quantity`
                         WHEN (`t0`.`transaction_type` = 'RVP') THEN -(`t0`.`quantity`)
-                        WHEN (`t0`.`transaction_type` = 'DF') THEN `t0`.`quantity`
+                        WHEN (`t0`.`transaction_type` = 'DF' and counterparty != 'EUROCLEAR 21235' and locate('CAEV/PARI', counterparty) = 0 and locate('DUMMY SEDOL CLEANUP', counterparty) = 0 and locate('/CAEV/REDM', counterparty) = 0)  THEN `t0`.`quantity`
                         ELSE 0
                     END)) AS `x`
             FROM
@@ -16,7 +16,8 @@ SELECT
                     `series`.`series_number` AS `series_number`,
                         `citi`.`settlement_date` AS `settlement_date`,
                         `citi`.`transaction_type` AS `transaction_type`,
-                        `citi`.`quantity` AS `quantity`
+                        `citi`.`quantity` AS `quantity`,
+                        counterparty
                 FROM
                     (`flexfunds`.`citi_all_transactions` `citi`
                 JOIN `flexfunds`.`series_names` `series`)
