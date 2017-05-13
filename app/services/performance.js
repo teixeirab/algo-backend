@@ -63,7 +63,6 @@ module.exports = function(TheoremBalanceSheetModel,
         lastMonthReport = this.getLastMonthReportByCurrentWeek(monthlyData, monthlyData[i])
       }
       let growth = monthlyData[i].nav_per_unit / lastMonthReport.nav_per_unit - 1
-      console.log(monthlyData[i].period, lastMonthReport.period, growth)
       returns.push({
         period: monthlyData[i].period,
         price: monthlyData[i].nav_per_unit,
