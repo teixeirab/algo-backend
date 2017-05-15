@@ -2,10 +2,14 @@
 
 module.exports = function(FlexFundsDB, Sequelize) {
   return FlexFundsDB.define('borrowers', {
+    id: {
+      type: Sequelize.STRING,
+      allowNull: true,
+      primaryKey: true
+    },
     company_name: {
       type: Sequelize.STRING,
-      allowNull: false,
-      primaryKey: true
+      allowNull: false
     },
     series_number: {
       type: Sequelize.STRING,

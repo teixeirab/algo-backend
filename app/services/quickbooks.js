@@ -105,6 +105,7 @@ module.exports = function(
     })
   }
 
+  /*
   this.generateLegalInvoice = function(params){
     const customer_name = params.customer_name;
     const series_number = params.series_number;
@@ -235,6 +236,7 @@ module.exports = function(
     })
 
   }
+  */
 
   this.generateSetUpInvoice = function(params) {
     const customer_name = params.customer_name
