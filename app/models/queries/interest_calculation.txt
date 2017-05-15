@@ -5,7 +5,8 @@ nominal_outstanding as 'Nominal Outstanding',
 simple_interest_income - simple_interest_repayment as 'Simple Interest Income',
 compounded_interest_income - compounded_interest_repayment as 'Compounded Interest Income',
 simple_interest_repayment + compounded_interest_repayment as 'Interest Repayment',
-simple_interest_income + compounded_interest_income as 'Total Interest Income'
+simple_interest_income + compounded_interest_income as 'Total Interest Income',
+invoice_sent as 'Invoice Sent'
 from (
 
 select id,
@@ -27,7 +28,8 @@ case when compounded_interest_rate is null then 0 else
 					  day_count_convention) end,0) as compounded_interest_income,
 
 coalesce(interest_repayment_calc(series_number, loan_payment_date, previous_payment_date, interest_accrual_date, day_count_convention, simple_interest_rate), 0) as simple_interest_repayment,
-coalesce(interest_repayment_calc(series_number, loan_payment_date, previous_payment_date, interest_accrual_date, day_count_convention, compounded_interest_rate), 0) as compounded_interest_repayment
+coalesce(interest_repayment_calc(series_number, loan_payment_date, previous_payment_date, interest_accrual_date, day_count_convention, compounded_interest_rate), 0) as compounded_interest_repayment,
+invoice_sent
 
 from (
 SELECT
@@ -39,6 +41,7 @@ SELECT
         day_count_convention,
         interest_accrual_date,
         compounded_interest_rate,
+        invoice_sent,
         ((SELECT
                 SUM((CASE
                         WHEN (`t0`.`transaction_type` = 'DVP') THEN `t0`.`quantity`
@@ -74,5 +77,5 @@ SELECT
 	-- where a.series_number = 58
     where a.series_number= '{param0}'
 ) t1
-group by id, series_number, nominal_outstanding, loan_payment_date
+group by id, series_number, nominal_outstanding, loan_payment_date, invoice_sent
 ) t2 order by loan_payment_date;

@@ -105,6 +105,137 @@ module.exports = function(
     })
   }
 
+  this.generateLegalInvoice = function(params){
+    const customer_name = params.customer_name;
+    const series_number = params.series_number;
+    const product_type = params.product_type.toUpperCase();
+    const qbAccountKey = 'flexfunds';
+    const qbConfig = Configs.quickbooks[qbAccountKey];
+    const className = 'Series';
+    return new Promise((resolve, reject) => {
+      async.waterfall([
+        (cb) => {
+          QBCustomerModel.findOne({
+            where: {
+              qb_account: qbConfig.account,
+              display_name: customer_name
+            }
+          }).then((customer) => {
+            if(!customer) {
+              return cb({err: `customer ${customer_name} not found`})
+            }
+            cb(undefined, customer)
+          })
+        },
+        (customer, cb) => {
+          QBClassModel.findOne({
+            where: {
+              fully_qualified_name: className
+            }
+          }).then((cls) => {
+            if(!cls) {
+              return cb({err: `invalid product type ${product_type}`})
+            }
+            cb(undefined, customer, cls)
+          })
+        },
+        (customer, cls, cb) => {
+          QBInvoiceTypeItemModel.findAll({
+            where: {
+              invoice_type: product_type
+            }
+          }).then((items) => {
+            if (!items.length) {
+              return cb({err: `no items found for product type ${product_type}`})
+            }
+            async.eachSeries(items, (item, _cb) => {
+              QBItemModel.findOne({
+                where: {
+                  id: item.item_id
+                }
+              }).then((_item) => {
+                if (!_item) {
+                  return _cb()
+                }
+                item.description = _item.description
+                _cb()
+              })
+            }, () => {
+              let lines = items.map((item) => {
+                return {
+                  Amount: item.item_amount,
+                  DetailType: "SalesItemLineDetail",
+                  Description: item.description,
+                  SalesItemLineDetail: {
+                    ItemRef: {
+                      value: item.item_id
+                    },
+                    ClassRef: {
+                      value: cls.id
+                    },
+                    Qty: 1
+                  }
+                }
+              })
+              lines.unshift({
+                DetailType: 'DescriptionOnly',
+                Description: `Setup Fees for FlexETP ${cls.name} - ${series_name}`
+              })
+              let invoice = {
+                Line: lines,
+                CustomerRef: {
+                  value: customer.id
+                },
+                //when this field is null, it defaults to customer's currency_code
+                //but when it is different from customer's currency_code it throws error:
+                //====Business Validation Error: The currency of the transaction is invalid for customer/vendor/account.====
+                //so setting this field seems not necessary so far.
+                CurrencyRef: {
+                  value: customer.currency_code
+                },
+                BillEmail: {
+                  Address: customer.email
+                },
+                EmailStatus: 'NeedToSend',
+                CustomerMemo: {
+                  value: "Make checks payable in USD to: \n " +
+                  "Bank: Bank of America \n" +
+                  "Account Name: FlexFunds ETP LLC \n" +
+                  "Account Number: 898067231257 \n" +
+                  "Routing (wires): 026009593 SWIFT: BOFAUS3N \n" +
+                  "(for all other currencies, please use BOFAUS6S) \n" +
+                  "Address: 495 Brickell Avenue. Miami, FL 33131 \n" +
+                  "\n" +
+                  "If you have any questions concerning this invoice, \n" +
+                  "contact us at accounting@flexfundsetp.com"
+                }
+                // DocNumber: null
+              }
+              cb(undefined, invoice, items[0].item_currency)
+            })
+          })
+        },
+        (invoice, currency_code, cb) => {
+          that.createInvoice({
+            qb_account_key: qbAccountKey,
+            invoice: invoice,
+            from_currency: currency_code
+          }).then((result) => {
+            cb(undefined, result)
+          }).catch((err) => {
+            cb(err)
+          })
+        }
+      ], (err, result) => {
+        if(err) {
+          return reject(err)
+        }
+        resolve(result)
+      })
+    })
+
+  }
+
   this.generateSetUpInvoice = function(params) {
     const customer_name = params.customer_name
     const product_type = params.product_type.toUpperCase()

@@ -25,6 +25,10 @@ module.exports = function(FlexFundsDB, Sequelize) {
     previous_payment_date: {
       type: Sequelize.DATE,
       allowNull: true
+    },
+    invoice_sent: {
+      type: Sequelize.ENUM('Yes','No'),
+      allowNull: false
     }
   }, {
     tableName: 'advances_schedule'
