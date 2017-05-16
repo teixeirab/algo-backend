@@ -70,6 +70,10 @@ module.exports = function(FlexFundsDB, Sequelize) {
     type_of_subscription: {
       type: Sequelize.TEXT,
       allowNull: true
+    },
+    client_name: {
+      type: Sequelize.TEXT,
+      allowNull: true
     }
   }, {
     tableName: 'series_product_information'
