@@ -37,6 +37,35 @@ module.exports = function(Configs, QuickBookService) {
     });
   }
 
+  this.generateMaintenanceInvoice = function(req, res) {
+    const seriesNumber = req.params.seriesNumber
+    req.checkBody({
+      from: {
+        notEmpty: true,
+        errorMessage: 'Invalid from'
+      },
+      to: {
+        notEmpty: true,
+        errorMessage: 'Invalid to'
+      }
+    })
+    req.getValidationResult().then(function(result) {
+      if (!result.isEmpty()) {
+        return res.status(403).send({err: result.array()})
+      }
+      let params = {
+        series_number: seriesNumber,
+        from: moment(req.body.from).toDate(),
+        to: moment(req.body.to).toDate()
+      }
+      QuickBookService.createMaintenanceInvoice(params).then((result) => {
+        res.send(result)
+      }).catch((err) => {
+        res.status(403).send(err)
+      })
+    })
+  }
+
   this.createCustomer = function(req, res) {
     req.checkBody({
       display_name: {notEmpty: true},

@@ -74,6 +74,10 @@ module.exports = function(FlexFundsDB, Sequelize) {
     client_name: {
       type: Sequelize.TEXT,
       allowNull: true
+    },
+    qb_fully_qualified_name: {
+      type: Sequelize.TEXT,
+      allowNull: true
     }
   }, {
     tableName: 'series_product_information'
