@@ -478,51 +478,83 @@ module.exports = function(
             })
           },
           (invoice, cb) => {
-            SeriesProductInformationModel.findOne({
-              where: {
-                series_number: seriesNumber
-              }
-            }).then((seriesProductInfo) => {
-              const client_name = seriesProductInfo.client_name
-              QBCustomerModel.findOne({
+            if (qbAccountKey === 'issuer') {
+              SeriesProductInformationModel.findOne({
                 where: {
-                  fully_qualified_name: client_name
+                  series_number: seriesNumber
                 }
-              }).then((customer) => {
-                _.assign(invoice, {
-                  CustomerRef: {
-                    value: customer.id
-                  },
-                  CurrencyRef: {
-                    value: customer.currency_code
-                  },
-                  BillEmail: {
-                    Address: customer.email
-                  },
-                  EmailStatus: 'NeedToSend',
-                  CustomerMemo: {
-                    value:  "Make checks payable in USD to: \n " +
-                    "Bank: Bank of America \n" +
-                    "Account Name: FlexFunds ETP LLC \n" +
-                    "Account Number: 898067231257 \n" +
-                    "Routing (wires): 026009593 SWIFT: BOFAUS3N \n" +
-                    "(for all other currencies, please use BOFAUS6S) \n" +
-                    "Address: 495 Brickell Avenue. Miami, FL 33131 \n" +
-                    "\n" +
-                    "If you have any questions concerning this invoice, \n" +
-                    "contact us at accounting@flexfundsetp.com"
+              }).then((seriesProductInfo) => {
+                const client_name = seriesProductInfo.client_name
+                QBCustomerModel.findOne({
+                  where: {
+                    fully_qualified_name: client_name
                   }
-                })
-                that.createInvoice({
-                  qb_account_key: qbAccountKey,
-                  invoice: invoice,
-                  from_currency: 'USD'
-                }).then((result) => {
-                  cb(undefined, result)
-                }).catch((err) => {
-                  cb(err)
+                }).then((customer) => {
+                  _.assign(invoice, {
+                    CustomerRef: {
+                      value: customer.id
+                    },
+                    CurrencyRef: {
+                      value: customer.currency_code
+                    },
+                    BillEmail: {
+                      Address: customer.email
+                    },
+                    EmailStatus: 'NeedToSend',
+                    CustomerMemo: {
+                      value:  "Make checks payable in USD to: \n " +
+                      "Bank: Bank of America \n" +
+                      "Account Name: FlexFunds ETP LLC \n" +
+                      "Account Number: 898067231257 \n" +
+                      "Routing (wires): 026009593 SWIFT: BOFAUS3N \n" +
+                      "(for all other currencies, please use BOFAUS6S) \n" +
+                      "Address: 495 Brickell Avenue. Miami, FL 33131 \n" +
+                      "\n" +
+                      "If you have any questions concerning this invoice, \n" +
+                      "contact us at accounting@flexfundsetp.com"
+                    }
+                  })
+                  cb(undefined, invoice)
                 })
               })
+            }
+            // if (qbAccountKey === 'flexfunds') {
+            //   _.assign(invoice, {
+            //     CustomerRef: {
+            //       value: customer.id
+            //     },
+            //     CurrencyRef: {
+            //       value: customer.currency_code
+            //     },
+            //     BillEmail: {
+            //       Address: customer.email
+            //     },
+            //     EmailStatus: 'NeedToSend',
+            //     CustomerMemo: {
+            //       value:  "Make checks payable in USD to: \n " +
+            //       "Bank: Bank of America \n" +
+            //       "Account Name: FlexFunds ETP LLC \n" +
+            //       "Account Number: 898067231257 \n" +
+            //       "Routing (wires): 026009593 SWIFT: BOFAUS3N \n" +
+            //       "(for all other currencies, please use BOFAUS6S) \n" +
+            //       "Address: 495 Brickell Avenue. Miami, FL 33131 \n" +
+            //       "\n" +
+            //       "If you have any questions concerning this invoice, \n" +
+            //       "contact us at accounting@flexfundsetp.com"
+            //     }
+            //   })
+            //   cb(undefined, invoice)
+            // }
+          },
+          (invoice, cb) => {
+            that.createInvoice({
+              qb_account_key: qbAccountKey,
+              invoice: invoice,
+              from_currency: 'USD'
+            }).then((result) => {
+              cb(undefined, result)
+            }).catch((err) => {
+              cb(err)
             })
           }
         ], (err) => {

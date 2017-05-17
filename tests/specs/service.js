@@ -278,7 +278,7 @@ describe('service tests', function() {
             ['QBItemModel', [
               {id: 1, name: 'audit_fees', qb_account: 'kata.choi@gmail.com', description: 'item test desc'},
               {id: 2, name: 'administrator_fees', qb_account: 'kata.choi@gmail.com', description: 'item test desc'},
-              {id: 3, name: 'arranger_fees', qb_account: '', description: 'item test desc'}
+              {id: 3, name: 'arranger_fees', qb_account: 'katat.choi@gmail.com', description: 'item test desc'}
             ]],
             ['QBTheoremItemModel', [
               {theorem_col: 'audit_fees', qb_item_id: 1},
@@ -293,7 +293,8 @@ describe('service tests', function() {
               {series_number: seriesNumber, client_name: '0.9035172225072845', bloomberg_name: '', product_type: '', issue_date: new Date(), maturity_date: new Date(), region: '', nav_frequency: '', currency: ''}
             ]],
             ['QBAPIAccountModel', [
-              {name: 'issuer', account: 'kata.choi@gmail.com', token_expires_date: new Date(), consumer_key: 'qyprdmo0k4zNWYg02AAuGfqaoC1mAr', consumer_secret: 'vY0ivLWoS88RwfZzjTSbVs661O1rtcNMIB8Q8dHq', token: 'qyprdd2brFdkST5neF228WkeabLldEPBkPfusLrQQjAQmyx0', token_secret: '06EtkSduVSqaWRvVLLQkLQcSZjFTa7ZS7hXxET4I', realm_id: '123145808149854', use_sandbox: true, debug: false}
+              {name: 'issuer', account: 'kata.choi@gmail.com', token_expires_date: new Date(), consumer_key: 'qyprdmo0k4zNWYg02AAuGfqaoC1mAr', consumer_secret: 'vY0ivLWoS88RwfZzjTSbVs661O1rtcNMIB8Q8dHq', token: 'qyprdd2brFdkST5neF228WkeabLldEPBkPfusLrQQjAQmyx0', token_secret: '06EtkSduVSqaWRvVLLQkLQcSZjFTa7ZS7hXxET4I', realm_id: '123145808149854', use_sandbox: true, debug: false},
+              {name: 'flexfunds', account: 'katat.choi@gmail.com', token_expires_date: new Date(), consumer_key: 'qyprdmo0k4zNWYg02AAuGfqaoC1mAr', consumer_secret: 'vY0ivLWoS88RwfZzjTSbVs661O1rtcNMIB8Q8dHq', token: 'qyprdd2brFdkST5neF228WkeabLldEPBkPfusLrQQjAQmyx0', token_secret: '06EtkSduVSqaWRvVLLQkLQcSZjFTa7ZS7hXxET4I', realm_id: '123145808149854', use_sandbox: true, debug: false}
             ]]
           ], () => {
             request(app)
