@@ -1,0 +1,1 @@
+select distinct(fully_qualified_name) fully_qualified_name from qb_customer where active=1 order by fully_qualified_name asc;

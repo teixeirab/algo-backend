@@ -7,103 +7,253 @@ const QuickBooks = require('node-quickbooks')
 module.exports = function(
   app,
   Configs,
+  QBAPIAccountModel,
+  SeriesProductInformationModel,
   QBCustomerModel,
   QBClassModel,
   QBItemModel,
+  QBTheoremItemModel,
   QBInvoiceTypeItemModel,
+  QBInvoicesMaintenanceModel,
   QBInvoiceModel) {
 
   const that = this
 
   this.getQBO = (config) => {
     return new QuickBooks(
-      config.consumerKey,
-      config.consumerSecret,
+      config.consumer_key,
+      config.consumer_secret,
       config.token,
-      config.tokenSecret,
-      config.realmId,
-      config.useSandbox,
+      config.token_secret,
+      config.realm_id,
+      config.use_sandbox,
       config.debug
     )
   }
 
+  this.getAPIConfigs = (accountName) => {
+    return QBAPIAccountModel.findOne({
+      where: {
+        name: accountName
+      }
+    })
+  }
+
   this.calcExchangeRate = function(qb_account_key, fromCcy, toCcy) {
-    const qbConfig = Configs.quickbooks[qb_account_key]
-    const qbo = this.getQBO(qbConfig)
     return new Promise((resolve, reject) => {
+      if(fromCcy === toCcy) {
+        return resolve(1)
+      }
       const twoWeekAgo = moment().subtract(2, 'weeks').format('YYYY-MM-DD')
-      qbo.findExchangeRates(
-        `where sourcecurrencycode in ('${fromCcy}', '${toCcy}') and asofdate>'${twoWeekAgo}'`,
-        (err, rateData) => {
-          if (err || !_.get(rateData, 'QueryResponse.ExchangeRate')) {
-            return reject(err || {err: 'exchange rate not found'})
+      that.getAPIConfigs(qb_account_key).then((qbConfig) => {
+        const qbo = this.getQBO(qbConfig)
+        qbo.findExchangeRates(
+          `where sourcecurrencycode in ('${fromCcy}', '${toCcy}') and asofdate>'${twoWeekAgo}'`,
+          (err, rateData) => {
+            if (err || !_.get(rateData, 'QueryResponse.ExchangeRate')) {
+              return reject(err || {err: 'exchange rate not found'})
+            }
+            let rates = rateData.QueryResponse.ExchangeRate
+            let sourceRates = _.remove(rates, (rate) => {
+              return rate.SourceCurrencyCode === fromCcy
+            })
+            sourceRates.sort((a, b) => {
+              return new Date(b.AsOfDate) - new Date(a.AsOfDate)
+            })
+            rates.sort((a, b) => {
+              return new Date(b.AsOfDate) - new Date(a.AsOfDate)
+            })
+            let latestSourceRate = sourceRates[0]
+            let latestTargetRate = _.find(rates, (rate) => {
+              return latestSourceRate.AsOfDate === rate.AsOfDate
+            }) || rates[0]
+            let exchangeRate = latestSourceRate.Rate / latestTargetRate.Rate
+            resolve(exchangeRate)
           }
-          let rates = rateData.QueryResponse.ExchangeRate
-          let sourceRates = _.remove(rates, (rate) => {
-            return rate.SourceCurrencyCode === fromCcy
-          })
-          sourceRates.sort((a, b) => {
-            return new Date(b.AsOfDate) - new Date(a.AsOfDate)
-          })
-          rates.sort((a, b) => {
-            return new Date(b.AsOfDate) - new Date(a.AsOfDate)
-          })
-          let latestSourceRate = sourceRates[0]
-          let latestTargetRate = _.find(rates, (rate) => {
-            return latestSourceRate.AsOfDate === rate.AsOfDate
-          })
-          let exchangeRate = latestSourceRate.Rate / latestTargetRate.Rate
-          resolve(exchangeRate)
-        }
-      )
+        )
+      })
     })
   }
 
   this.createInvoice = function(params) {
     const qbAccountKey = params.qb_account_key
-    const qbConfig = Configs.quickbooks[qbAccountKey]
     const fromCurrency = params.from_currency
     const toCurrency = _.get(params, 'invoice.CurrencyRef.value')
-    const qbo = this.getQBO(qbConfig)
     return new Promise((resolve, reject) => {
-      that.calcExchangeRate(qbAccountKey, fromCurrency, toCurrency).then((rate) => {
-        params.invoice.Line.forEach((line) => {
-          line.Amount *= rate
-        })
-        qbo.createInvoice(params.invoice, (err, result) => {
-          if(err) {
-            return reject(err)
-          }
-          QBInvoiceModel.create({
-            id              : result.Id,
-            qb_account      : qbConfig.account,
-            customer_id     : _.get(result, 'CustomerRef.value'),
-            doc_num         : result.DocNumber || result.Id,
-            total_amount    : result.TotalAmt,
-            currency_code   : _.get(result, 'CurrencyRef.value'),
-            exchange_rate   : result.ExchangeRate,
-            due_date        : result.DueDate,
-            txn_date        : result.TxnDate,
-            email_status    : result.EmailStatus,
-            einvoice_status : result.EInvoiceStatus,
-            balance         : result.Balance
-          }).then((invoice) => {
-            qbo.sendInvoicePdf(result.Id, (err, result) => {
-              if (err) {
-                return reject(err)
-              }
-              invoice.email_status = result.EmailStatus
-              invoice.save().then(() => {
-                resolve(result)
+      that.getAPIConfigs(qbAccountKey).then((qbConfig) => {
+        const qbo = that.getQBO(qbConfig)
+        that.calcExchangeRate(qbAccountKey, fromCurrency, toCurrency).then((rate) => {
+          params.invoice.Line.forEach((line) => {
+            line.Amount *= rate
+          })
+          qbo.createInvoice(params.invoice, (err, result) => {
+            if(err) {
+              return reject(err)
+            }
+            QBInvoiceModel.create({
+              id              : result.Id,
+              qb_account      : qbConfig.account,
+              customer_id     : _.get(result, 'CustomerRef.value'),
+              doc_num         : result.DocNumber || result.Id,
+              total_amount    : result.TotalAmt,
+              currency_code   : _.get(result, 'CurrencyRef.value'),
+              exchange_rate   : result.ExchangeRate,
+              due_date        : result.DueDate,
+              txn_date        : result.TxnDate,
+              email_status    : result.EmailStatus,
+              einvoice_status : result.EInvoiceStatus,
+              balance         : result.Balance
+            }).then((invoice) => {
+              qbo.sendInvoicePdf(result.Id, (err, result) => {
+                if (err) {
+                  return reject(err)
+                }
+                invoice.email_status = result.EmailStatus
+                invoice.save().then(() => {
+                  resolve(result)
+                })
               })
+            }).catch((err) => {
+              reject(err)
             })
-          }).catch((err) => {
-            reject(err)
           })
         })
       })
     })
   }
+
+  /*
+  this.generateLegalInvoice = function(params){
+    const customer_name = params.customer_name;
+    const series_number = params.series_number;
+    const product_type = params.product_type.toUpperCase();
+    const qbAccountKey = 'flexfunds';
+    const qbConfig = Configs.quickbooks[qbAccountKey];
+    const className = 'Series';
+    return new Promise((resolve, reject) => {
+      async.waterfall([
+        (cb) => {
+          QBCustomerModel.findOne({
+            where: {
+              qb_account: qbConfig.account,
+              display_name: customer_name
+            }
+          }).then((customer) => {
+            if(!customer) {
+              return cb({err: `customer ${customer_name} not found`})
+            }
+            cb(undefined, customer)
+          })
+        },
+        (customer, cb) => {
+          QBClassModel.findOne({
+            where: {
+              fully_qualified_name: className
+            }
+          }).then((cls) => {
+            if(!cls) {
+              return cb({err: `invalid product type ${product_type}`})
+            }
+            cb(undefined, customer, cls)
+          })
+        },
+        (customer, cls, cb) => {
+          QBInvoiceTypeItemModel.findAll({
+            where: {
+              invoice_type: product_type
+            }
+          }).then((items) => {
+            if (!items.length) {
+              return cb({err: `no items found for product type ${product_type}`})
+            }
+            async.eachSeries(items, (item, _cb) => {
+              QBItemModel.findOne({
+                where: {
+                  id: item.item_id
+                }
+              }).then((_item) => {
+                if (!_item) {
+                  return _cb()
+                }
+                item.description = _item.description
+                _cb()
+              })
+            }, () => {
+              let lines = items.map((item) => {
+                return {
+                  Amount: item.item_amount,
+                  DetailType: "SalesItemLineDetail",
+                  Description: item.description,
+                  SalesItemLineDetail: {
+                    ItemRef: {
+                      value: item.item_id
+                    },
+                    ClassRef: {
+                      value: cls.id
+                    },
+                    Qty: 1
+                  }
+                }
+              })
+              lines.unshift({
+                DetailType: 'DescriptionOnly',
+                Description: `Setup Fees for FlexETP ${cls.name} - ${series_name}`
+              })
+              let invoice = {
+                Line: lines,
+                CustomerRef: {
+                  value: customer.id
+                },
+                //when this field is null, it defaults to customer's currency_code
+                //but when it is different from customer's currency_code it throws error:
+                //====Business Validation Error: The currency of the transaction is invalid for customer/vendor/account.====
+                //so setting this field seems not necessary so far.
+                CurrencyRef: {
+                  value: customer.currency_code
+                },
+                BillEmail: {
+                  Address: customer.email
+                },
+                EmailStatus: 'NeedToSend',
+                CustomerMemo: {
+                  value: "Make checks payable in USD to: \n " +
+                  "Bank: Bank of America \n" +
+                  "Account Name: FlexFunds ETP LLC \n" +
+                  "Account Number: 898067231257 \n" +
+                  "Routing (wires): 026009593 SWIFT: BOFAUS3N \n" +
+                  "(for all other currencies, please use BOFAUS6S) \n" +
+                  "Address: 495 Brickell Avenue. Miami, FL 33131 \n" +
+                  "\n" +
+                  "If you have any questions concerning this invoice, \n" +
+                  "contact us at accounting@flexfundsetp.com"
+                }
+                // DocNumber: null
+              }
+              cb(undefined, invoice, items[0].item_currency)
+            })
+          })
+        },
+        (invoice, currency_code, cb) => {
+          that.createInvoice({
+            qb_account_key: qbAccountKey,
+            invoice: invoice,
+            from_currency: currency_code
+          }).then((result) => {
+            cb(undefined, result)
+          }).catch((err) => {
+            cb(err)
+          })
+        }
+      ], (err, result) => {
+        if(err) {
+          return reject(err)
+        }
+        resolve(result)
+      })
+    })
+
+  }
+  */
 
   this.generateSetUpInvoice = function(params) {
     const customer_name = params.customer_name
@@ -240,6 +390,147 @@ module.exports = function(
           return reject(err)
         }
         resolve(result)
+      })
+    })
+  }
+
+  this.createMaintenanceInvoice = function(params) {
+    const seriesNumber = params.series_number
+    const from = params.from
+    const to = params.to
+    const qbAccountKey = 'issuer'
+    return new Promise((resolve, reject) => {
+      QBAPIAccountModel.findOne({
+        where: {
+          name: qbAccountKey
+        }
+      }).then((qbConfig) => {
+        async.waterfall([
+          (cb) => {
+            const seriesName = `Series ${seriesNumber}`
+            QBClassModel.findOne({
+              where: {
+                fully_qualified_name: seriesName,
+                qb_account: qbConfig.account
+              }
+            }).then((cls) => {
+              if(!cls) {
+                return cb({err: `invalid series name ${seriesName}`})
+              }
+              cb(undefined, cls)
+            })
+          },
+          (cls, cb) => {
+            QBInvoicesMaintenanceModel.findOne({
+              where: {
+                series_number: seriesNumber,
+                from: {
+                  $gte: moment(from).startOf('day').toDate(),
+                  $lte: moment(from).endOf('day').toDate()
+                },
+                to: {
+                  $gte: moment(to).startOf('day').toDate(),
+                  $lte: moment(to).endOf('day').toDate()
+                },
+                invoice_sent_date: null
+              }
+            }).then((fees) => {
+              if (!fees) {
+                return cb({err: `no maintenance fees found for series_number: ${seriesNumber}`})
+              }
+              QBItemModel.findAll({
+                where: {
+                  qb_account: qbConfig.account
+                }
+              }).then((issuerItems) => {
+                QBTheoremItemModel.findAll().then((theoremItems) => {
+                  let issuerTheoremItems = _.remove(issuerItems, (issuerItem) => {
+                    return _.find(theoremItems, (theoremItem) => {
+                      let matched = theoremItem.qb_item_id === issuerItem.id
+                      if (matched) {
+                        issuerItem.item_amount = fees[theoremItem.theorem_col]
+                      }
+                      return matched
+                    })
+                  })
+                  let lines = issuerTheoremItems.map((item) => {
+                    return {
+                      Amount: item.item_amount,
+                      DetailType: "SalesItemLineDetail",
+                      Description: item.description,
+                      SalesItemLineDetail: {
+                        ItemRef: {
+                          value: item.id
+                        },
+                        ClassRef: {
+                          value: cls.id
+                        },
+                        Qty: 1
+                      }
+                    }
+                  })
+                  let invoice = {
+                    Line: lines
+                  }
+                  cb(undefined, invoice)
+                })
+              })
+            })
+          },
+          (invoice, cb) => {
+            SeriesProductInformationModel.findOne({
+              where: {
+                series_number: seriesNumber
+              }
+            }).then((seriesProductInfo) => {
+              const client_name = seriesProductInfo.client_name
+              QBCustomerModel.findOne({
+                where: {
+                  fully_qualified_name: client_name
+                }
+              }).then((customer) => {
+                _.assign(invoice, {
+                  CustomerRef: {
+                    value: customer.id
+                  },
+                  CurrencyRef: {
+                    value: customer.currency_code
+                  },
+                  BillEmail: {
+                    Address: customer.email
+                  },
+                  EmailStatus: 'NeedToSend',
+                  CustomerMemo: {
+                    value:  "Make checks payable in USD to: \n " +
+                    "Bank: Bank of America \n" +
+                    "Account Name: FlexFunds ETP LLC \n" +
+                    "Account Number: 898067231257 \n" +
+                    "Routing (wires): 026009593 SWIFT: BOFAUS3N \n" +
+                    "(for all other currencies, please use BOFAUS6S) \n" +
+                    "Address: 495 Brickell Avenue. Miami, FL 33131 \n" +
+                    "\n" +
+                    "If you have any questions concerning this invoice, \n" +
+                    "contact us at accounting@flexfundsetp.com"
+                  }
+                })
+                that.createInvoice({
+                  qb_account_key: qbAccountKey,
+                  invoice: invoice,
+                  from_currency: 'USD'
+                }).then((result) => {
+                  cb(undefined, result)
+                }).catch((err) => {
+                  cb(err)
+                })
+              })
+            })
+          }
+        ], (err) => {
+          if (err) {
+            return reject(err)
+          }
+          resolve()
+        })
       })
     })
   }

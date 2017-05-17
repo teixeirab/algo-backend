@@ -15,6 +15,7 @@ describe('service tests', function() {
     'SeriesProductInformationModel',
     'QBCustomerModel',
     'QBInvoiceModel',
+    'QBClassModel',
     'FlexFundsDB'
   ]
   const formatDate = (date) => {
@@ -218,7 +219,7 @@ describe('service tests', function() {
     });
     describe('api', function () {
       describe('invoice', function () {
-        it.only('generate setup invoice', function (done) {
+        it('generate setup invoice', function (done) {
           helper.batchCreateInstances([
             ['QBClassModel', [
               {
@@ -241,6 +242,9 @@ describe('service tests', function() {
             ['QBCustomerModel', [
               {id: 2, qb_account: 'test', display_name: 'kc', currency_code: 'USD'},
               {id: 3, qb_account: 'kata.choi@gmail.com', display_name: '0.9035172225072845', currency_code: 'USD', email: 'kata.choi@gmail.com'}
+            ]],
+            ['QBAPIAccountModel', [
+              {name: 'flexfunds', account: 'kata.choi@gmail.com', token_expires_date: new Date(), consumer_key: 'qyprdmo0k4zNWYg02AAuGfqaoC1mAr', consumer_secret: 'vY0ivLWoS88RwfZzjTSbVs661O1rtcNMIB8Q8dHq', token: 'qyprdd2brFdkST5neF228WkeabLldEPBkPfusLrQQjAQmyx0', token_secret: '06EtkSduVSqaWRvVLLQkLQcSZjFTa7ZS7hXxET4I', realm_id: '123145808149854', use_sandbox: true, debug: false}
             ]]
           ], () => {
             request(app)
@@ -248,9 +252,59 @@ describe('service tests', function() {
               .set('internal-key', '123')
               .send({
                 customer_name: '0.9035172225072845',
-                product_type: 'funds'
+                product_type: 'funds',
+                series_name: 'test series'
               })
               .end((err, res) => {
+                console.log(JSON.stringify(res.body))
+                done()
+              })
+          })
+        });
+        it.only('generate maintenance invoice', function (done) {
+          const seriesNumber = 1, from = '2016-01-01', to = '2016-12-31', issuerAccount = 'teixeirabernardo'
+          helper.batchCreateInstances([
+            ['QBClassModel', [
+              {
+                id: "5000000000000027881",
+                qb_account: 'kata.choi@gmail.com',
+                name: 'Series 1',
+                fully_qualified_name: 'Series 1'
+              }
+            ]],
+            ['QBInvoicesMaintenanceModel', [
+              {series_number: seriesNumber, from: new Date(from), to: new Date(to), audit_fees: 100, administrator_fees: 100, arranger_fees: 50}
+            ]],
+            ['QBItemModel', [
+              {id: 1, name: 'audit_fees', qb_account: 'kata.choi@gmail.com', description: 'item test desc'},
+              {id: 2, name: 'administrator_fees', qb_account: 'kata.choi@gmail.com', description: 'item test desc'},
+              {id: 3, name: 'arranger_fees', qb_account: '', description: 'item test desc'}
+            ]],
+            ['QBTheoremItemModel', [
+              {theorem_col: 'audit_fees', qb_item_id: 1},
+              {theorem_col: 'administrator_fees', qb_item_id: 2},
+              {theorem_col: 'arranger_fees', qb_item_id: 3}
+            ]],
+            ['QBCustomerModel', [
+              {id: 2, qb_account: 'test', display_name: 'kc', currency_code: 'USD'},
+              {id: 3, qb_account: 'kata.choi@gmail.com', fully_qualified_name: '0.9035172225072845', display_name: '0.9035172225072845', currency_code: 'USD', email: 'kata.choi@gmail.com'}
+            ]],
+            ['SeriesProductInformationModel', [
+              {series_number: seriesNumber, client_name: '0.9035172225072845', bloomberg_name: '', product_type: '', issue_date: new Date(), maturity_date: new Date(), region: '', nav_frequency: '', currency: ''}
+            ]],
+            ['QBAPIAccountModel', [
+              {name: 'issuer', account: 'kata.choi@gmail.com', token_expires_date: new Date(), consumer_key: 'qyprdmo0k4zNWYg02AAuGfqaoC1mAr', consumer_secret: 'vY0ivLWoS88RwfZzjTSbVs661O1rtcNMIB8Q8dHq', token: 'qyprdd2brFdkST5neF228WkeabLldEPBkPfusLrQQjAQmyx0', token_secret: '06EtkSduVSqaWRvVLLQkLQcSZjFTa7ZS7hXxET4I', realm_id: '123145808149854', use_sandbox: true, debug: false}
+            ]]
+          ], () => {
+            request(app)
+              .post('/api/panel/qb/maintenance-invoice/' + seriesNumber)
+              .set('internal-key', '123')
+              .send({
+                from: from,
+                to: to
+              })
+              .end((err, res) => {
+                console.log(err)
                 console.log(JSON.stringify(res.body))
                 done()
               })

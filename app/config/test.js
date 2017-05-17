@@ -34,6 +34,6 @@ module.exports = {
       // useSandbox:      false,
       // debug:           false
     }
-  }
+  },
   // dbLogging: console.log
 }

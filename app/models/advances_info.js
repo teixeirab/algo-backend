@@ -3,7 +3,7 @@
 module.exports = function(FlexFundsDB, Sequelize) {
   return FlexFundsDB.define('advances_info', {
     series_number: {
-      type: Sequelize.INTEGER(11),
+      type: Sequelize.STRING,
       primaryKey: true,
       allowNull: false
     },
@@ -25,6 +25,10 @@ module.exports = function(FlexFundsDB, Sequelize) {
     },
     principal_repayment_type: {
       type: Sequelize.ENUM('Bullet','No Repayment','Amortized'),
+      allowNull: false
+    },
+    basis: {
+      type: Sequelize.DOUBLE,
       allowNull: false
     },
     simple_interest_rate: {
