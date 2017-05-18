@@ -35,6 +35,7 @@
         "SeriesSubscriptionModel": "./models/series_subscriptions",
         "CitiCashBalancesModel": "./models/citi_cash_balances",
         "QBAPIAccountModel": "./models/qb_api_account",
+        "QBAccountIssuerModel": "./models/qb_account_to_issuer",
         "QBTransactionListModel": "./models/qb_transaction_list",
         "QBCustomerModel": "./models/qb_customer",
         "QBClassModel": "./models/qb_class",

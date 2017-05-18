@@ -9,6 +9,8 @@ module.exports = function(
   Configs,
   QBAPIAccountModel,
   SeriesProductInformationModel,
+  SeriesAgentInformationModel,
+  QBAccountIssuerModel,
   QBCustomerModel,
   QBClassModel,
   QBItemModel,
@@ -18,6 +20,17 @@ module.exports = function(
   QBInvoiceModel) {
 
   const that = this
+
+  const customerMemo =  "Make checks payable in USD to: \n " +
+                        "Bank: Bank of America \n" +
+                        "Account Name: FlexFunds ETP LLC \n" +
+                        "Account Number: 898067231257 \n" +
+                        "Routing (wires): 026009593 SWIFT: BOFAUS3N \n" +
+                        "(for all other currencies, please use BOFAUS6S) \n" +
+                        "Address: 495 Brickell Avenue. Miami, FL 33131 \n" +
+                        "\n" +
+                        "If you have any questions concerning this invoice, \n" +
+                        "contact us at accounting@flexfundsetp.com"
 
   this.getQBO = (config) => {
     return new QuickBooks(
@@ -86,6 +99,8 @@ module.exports = function(
           params.invoice.Line.forEach((line) => {
             line.Amount *= rate
           })
+          // console.log(JSON.stringify(params, undefined, 2))
+          // return resolve()
           qbo.createInvoice(params.invoice, (err, result) => {
             if(err) {
               return reject(err)
@@ -357,16 +372,7 @@ module.exports = function(
                 },
                 EmailStatus: 'NeedToSend',
                 CustomerMemo: {
-                  value: "Make checks payable in USD to: \n " +
-                          "Bank: Bank of America \n" +
-                          "Account Name: FlexFunds ETP LLC \n" +
-                          "Account Number: 898067231257 \n" +
-                          "Routing (wires): 026009593 SWIFT: BOFAUS3N \n" +
-                          "(for all other currencies, please use BOFAUS6S) \n" +
-                          "Address: 495 Brickell Avenue. Miami, FL 33131 \n" +
-                          "\n" +
-                          "If you have any questions concerning this invoice, \n" +
-                          "contact us at accounting@flexfundsetp.com"
+                  value: customerMemo
                 }
                 // DocNumber: null
               }
@@ -394,23 +400,252 @@ module.exports = function(
     })
   }
 
-  this.createMaintenanceInvoice = function(params) {
-    const seriesNumber = params.series_number
-    const from = params.from
-    const to = params.to
-    const qbAccountKey = 'issuer'
+  this.getQBConfigsBySeriesNumber = function(seriesNumber) {
     return new Promise((resolve, reject) => {
-      QBAPIAccountModel.findOne({
-        where: {
-          name: qbAccountKey
+      async.waterfall([
+        (cb) => {
+          SeriesAgentInformationModel.findOne({
+            where: {
+              series_number: seriesNumber
+            }
+          }).then((agentInfo) => {
+            if (!agentInfo) {
+              return cb({err: `no agent info found for series number: ${seriesNumber}`})
+            }
+            cb(undefined, agentInfo)
+          })
+        },
+        (agentInfo, cb) => {
+          QBAccountIssuerModel.findOne({
+            where: {
+              issuer: agentInfo.issuer
+            }
+          }).then((qbAccountIssuer) => {
+            if (!qbAccountIssuer) {
+              return cb({err: `no qb account issuer found for issuer:${qbAccountIssuer.issuer}`})
+            }
+            QBAPIAccountModel.findOne({
+              where: {
+                account: qbAccountIssuer.qb_account
+              }
+            }).then((_qbConfig) => {
+              if (!_qbConfig) {
+                return cb({err: `no qb api config found for account: ${qbAccountIssuer.qb_account}`})
+              }
+              cb(undefined, _qbConfig)
+            })
+          })
         }
-      }).then((qbConfig) => {
-        async.waterfall([
-          (cb) => {
-            const seriesName = `Series ${seriesNumber}`
+      ], (err, qbConfig) => {
+        if (err) {
+          return reject(err)
+        }
+        resolve(qbConfig)
+      })
+    })
+  }
+
+  this.getInvoiceLinesForMaintenanceFees = function(params) {
+    let seriesNumber = params.seriesNumber,
+        from         = params.from,
+        to           = params.to,
+        classId      = params.classId,
+        qbAccount    = params.qbAccount
+    return new Promise((resolve, reject) => {
+      QBInvoicesMaintenanceModel.findOne({
+        where: {
+          series_number: seriesNumber,
+          from: {
+            $gte: moment(from).startOf('day').toDate(),
+            $lte: moment(from).endOf('day').toDate()
+          },
+          to: {
+            $gte: moment(to).startOf('day').toDate(),
+            $lte: moment(to).endOf('day').toDate()
+          },
+          invoice_sent_date: null
+        }
+      }).then((fees) => {
+        if (!fees) {
+          return reject({err: `no maintenance fees found for series_number: ${seriesNumber}`})
+        }
+        QBItemModel.findAll({
+          where: {
+            qb_account: qbAccount
+          }
+        }).then((issuerItems) => {
+          QBTheoremItemModel.findAll({
+            where: {
+              qb_account: qbAccount
+            }
+          }).then((theoremItems) => {
+            let issuerTheoremItems = _.remove(issuerItems, (issuerItem) => {
+              return _.find(theoremItems, (theoremItem) => {
+                if (!fees[theoremItem.theorem_col]) {
+                  return
+                }
+                let matched = theoremItem.qb_item_id == issuerItem.id
+                if (matched) {
+                  issuerItem.item_amount = fees[theoremItem.theorem_col]
+                }
+                return matched
+              })
+            })
+            let lines = issuerTheoremItems.map((item) => {
+              let line = {
+                Amount: item.item_amount,
+                DetailType: "SalesItemLineDetail",
+                Description: item.description,
+                SalesItemLineDetail: {
+                  ItemRef: {
+                    value: item.id
+                  },
+                  Qty: 1
+                }
+              }
+              if (classId) {
+                line.SalesItemLineDetail.ClassRef = {
+                  value: classId
+                }
+              }
+              return line
+            })
+            resolve(lines)
+          })
+        })
+      })
+    })
+  }
+
+  this.createMaintenanceInvoiceFromIssuer = function(params) {
+    const seriesNumber = params.series_number
+    const from         = params.from
+    const to           = params.to
+    return new Promise((resolve, reject) => {
+      let qbConfig
+      async.waterfall([
+        (cb) => {
+          that.getQBConfigsBySeriesNumber(seriesNumber).then((_qbConfig) => {
+            qbConfig = _qbConfig
+            cb()
+          }).catch((err) => {
+            cb(err)
+          })
+        },
+        (cb) => {
+          const seriesName = `Series ${seriesNumber}`
+          QBClassModel.findOne({
+            where: {
+              fully_qualified_name: seriesName,
+              qb_account: qbConfig.account
+            }
+          }).then((cls) => {
+            if(!cls) {
+              return cb({err: `invalid series name ${seriesName}`})
+            }
+            cb(undefined, cls)
+          })
+        },
+        (cls, cb) => {
+          that.getInvoiceLinesForMaintenanceFees({
+            seriesNumber: seriesNumber,
+            from: from,
+            to: to,
+            classId: cls.id,
+            qbAccount: qbConfig.account
+          }).then((lines) => {
+            cb(undefined, {Line: lines})
+          }).catch(cb)
+        },
+        (invoice, cb) => {
+          SeriesProductInformationModel.findOne({
+            where: {
+              series_number: seriesNumber
+            }
+          }).then((seriesProductInfo) => {
+            const client_name = seriesProductInfo.client_name
+            QBCustomerModel.findOne({
+              where: {
+                fully_qualified_name: client_name,
+                qb_account: qbConfig.account
+              }
+            }).then((customer) => {
+              _.assign(invoice, {
+                CustomerRef: {
+                  value: customer.id
+                },
+                CurrencyRef: {
+                  value: customer.currency_code
+                },
+                BillEmail: {
+                  Address: customer.email
+                },
+                EmailStatus: 'NeedToSend',
+                CustomerMemo: {
+                  value:  customerMemo
+                }
+              })
+              cb(undefined, invoice)
+            })
+          })
+        },
+        (invoice, cb) => {
+          that.createInvoice({
+            qb_account_key: qbConfig.name,
+            invoice: invoice,
+            from_currency: 'USD'
+          }).then((result) => {
+            cb(undefined, result)
+          }).catch((err) => {
+            cb(err)
+          })
+        }
+      ], (err) => {
+        if (err) {
+          return reject(err)
+        }
+        resolve()
+      })
+    })
+  }
+
+  this.createMaintenanceInvoiceFromFlex = function(params) {
+    const seriesNumber = params.series_number
+    const from         = params.from
+    const to           = params.to
+    let clientName
+    return new Promise((resolve, reject) => {
+      let qbConfig
+      async.waterfall([
+        (cb) => {
+          QBAPIAccountModel.findOne({
+            where: {
+              name: 'flexfunds'
+            }
+          }).then((_qbConfig) => {
+            qbConfig = _qbConfig
+            cb()
+          })
+        },
+        (cb) => {
+          SeriesAgentInformationModel.findOne({
+            where: {
+              series_number: seriesNumber
+            }
+          }).then((agentInfo) => {
+            clientName = agentInfo.issuer
+            cb()
+          })
+        },
+        (cb) => {
+          SeriesProductInformationModel.findOne({
+            where: {
+              series_number: seriesNumber
+            }
+          }).then((productInfo) => {
             QBClassModel.findOne({
               where: {
-                fully_qualified_name: seriesName,
+                fully_qualified_name: productInfo.product_type,
                 qb_account: qbConfig.account
               }
             }).then((cls) => {
@@ -419,150 +654,89 @@ module.exports = function(
               }
               cb(undefined, cls)
             })
-          },
-          (cls, cb) => {
-            QBInvoicesMaintenanceModel.findOne({
-              where: {
-                series_number: seriesNumber,
-                from: {
-                  $gte: moment(from).startOf('day').toDate(),
-                  $lte: moment(from).endOf('day').toDate()
-                },
-                to: {
-                  $gte: moment(to).startOf('day').toDate(),
-                  $lte: moment(to).endOf('day').toDate()
-                },
-                invoice_sent_date: null
-              }
-            }).then((fees) => {
-              if (!fees) {
-                return cb({err: `no maintenance fees found for series_number: ${seriesNumber}`})
-              }
-              QBItemModel.findAll({
-                where: {
-                  qb_account: qbConfig.account
-                }
-              }).then((issuerItems) => {
-                QBTheoremItemModel.findAll().then((theoremItems) => {
-                  let issuerTheoremItems = _.remove(issuerItems, (issuerItem) => {
-                    return _.find(theoremItems, (theoremItem) => {
-                      let matched = theoremItem.qb_item_id === issuerItem.id
-                      if (matched) {
-                        issuerItem.item_amount = fees[theoremItem.theorem_col]
-                      }
-                      return matched
-                    })
-                  })
-                  let lines = issuerTheoremItems.map((item) => {
-                    return {
-                      Amount: item.item_amount,
-                      DetailType: "SalesItemLineDetail",
-                      Description: item.description,
-                      SalesItemLineDetail: {
-                        ItemRef: {
-                          value: item.id
-                        },
-                        ClassRef: {
-                          value: cls.id
-                        },
-                        Qty: 1
-                      }
-                    }
-                  })
-                  let invoice = {
-                    Line: lines
-                  }
-                  cb(undefined, invoice)
-                })
-              })
-            })
-          },
-          (invoice, cb) => {
-            if (qbAccountKey === 'issuer') {
-              SeriesProductInformationModel.findOne({
-                where: {
-                  series_number: seriesNumber
-                }
-              }).then((seriesProductInfo) => {
-                const client_name = seriesProductInfo.client_name
-                QBCustomerModel.findOne({
-                  where: {
-                    fully_qualified_name: client_name
-                  }
-                }).then((customer) => {
-                  _.assign(invoice, {
-                    CustomerRef: {
-                      value: customer.id
-                    },
-                    CurrencyRef: {
-                      value: customer.currency_code
-                    },
-                    BillEmail: {
-                      Address: customer.email
-                    },
-                    EmailStatus: 'NeedToSend',
-                    CustomerMemo: {
-                      value:  "Make checks payable in USD to: \n " +
-                      "Bank: Bank of America \n" +
-                      "Account Name: FlexFunds ETP LLC \n" +
-                      "Account Number: 898067231257 \n" +
-                      "Routing (wires): 026009593 SWIFT: BOFAUS3N \n" +
-                      "(for all other currencies, please use BOFAUS6S) \n" +
-                      "Address: 495 Brickell Avenue. Miami, FL 33131 \n" +
-                      "\n" +
-                      "If you have any questions concerning this invoice, \n" +
-                      "contact us at accounting@flexfundsetp.com"
-                    }
-                  })
-                  cb(undefined, invoice)
-                })
-              })
+          })
+        },
+        (cls, cb) => {
+          that.getInvoiceLinesForMaintenanceFees({
+            seriesNumber: seriesNumber,
+            from: from,
+            to: to,
+            classId: cls.id,
+            qbAccount: qbConfig.account
+          }).then((lines) => {
+            cb(undefined, {Line: lines})
+          }).catch(cb)
+        },
+        (invoice, cb) => {
+          if (clientName === 'IA Capital Structures (Ireland) PLC.') {
+            // clientName = 'IA Capital Structures (Ireland) PLC USD'
+            clientName = 'test'
+          }
+          QBCustomerModel.findOne({
+            where: {
+              fully_qualified_name: clientName,
+              qb_account: qbConfig.account
             }
-            // if (qbAccountKey === 'flexfunds') {
-            //   _.assign(invoice, {
-            //     CustomerRef: {
-            //       value: customer.id
-            //     },
-            //     CurrencyRef: {
-            //       value: customer.currency_code
-            //     },
-            //     BillEmail: {
-            //       Address: customer.email
-            //     },
-            //     EmailStatus: 'NeedToSend',
-            //     CustomerMemo: {
-            //       value:  "Make checks payable in USD to: \n " +
-            //       "Bank: Bank of America \n" +
-            //       "Account Name: FlexFunds ETP LLC \n" +
-            //       "Account Number: 898067231257 \n" +
-            //       "Routing (wires): 026009593 SWIFT: BOFAUS3N \n" +
-            //       "(for all other currencies, please use BOFAUS6S) \n" +
-            //       "Address: 495 Brickell Avenue. Miami, FL 33131 \n" +
-            //       "\n" +
-            //       "If you have any questions concerning this invoice, \n" +
-            //       "contact us at accounting@flexfundsetp.com"
-            //     }
-            //   })
-            //   cb(undefined, invoice)
-            // }
-          },
-          (invoice, cb) => {
-            that.createInvoice({
-              qb_account_key: qbAccountKey,
-              invoice: invoice,
-              from_currency: 'USD'
-            }).then((result) => {
-              cb(undefined, result)
-            }).catch((err) => {
-              cb(err)
+          }).then((customer) => {
+            if (!customer) {
+              return cb({err: `no qb customer found: ${clientName}`})
+            }
+            _.assign(invoice, {
+              CustomerRef: {
+                value: customer.id
+              },
+              CurrencyRef: {
+                value: customer.currency_code
+              },
+              BillEmail: {
+                Address: customer.email
+              },
+              EmailStatus: 'NeedToSend',
+              CustomerMemo: {
+                value:  customerMemo
+              }
             })
-          }
-        ], (err) => {
-          if (err) {
-            return reject(err)
-          }
-          resolve()
-        })
+            cb(undefined, invoice)
+          })
+        },
+        (invoice, cb) => {
+          that.createInvoice({
+            qb_account_key: qbConfig.name,
+            invoice: invoice,
+            from_currency: 'USD'
+          }).then((result) => {
+            cb(undefined, result)
+          }).catch((err) => {
+            cb(err)
+          })
+        }
+      ], (err) => {
+        if (err) {
+          return reject(err)
+        }
+        resolve()
+      })
+    })
+  }
+
+  this.createMaintenanceInvoice = function(params) {
+    return new Promise((resolve, reject) => {
+      async.waterfall([
+        (cb) => {
+          that.createMaintenanceInvoiceFromIssuer(params).then(() => {
+            cb()
+          }).catch(cb)
+        },
+        (cb) => {
+          that.createMaintenanceInvoiceFromFlex(params).then(() => {
+            cb()
+          }).catch(cb)
+        }
+      ], (err) => {
+        if (err) {
+          return reject(err)
+        }
+        resolve()
       })
     })
   }
