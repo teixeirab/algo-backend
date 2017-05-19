@@ -563,9 +563,8 @@ module.exports = function(
                   })
                   if (subTotal && category !== 'null') {
                     lines.push({
-                      Amount: subTotal,
-                      DetailType: "SubTotalLineDetail",
-                      SubTotalLineDetail: {}
+                      DetailType: 'DescriptionOnly',
+                      Description: 'Subtotal: $' + subTotal
                     })
                   }
                 })
