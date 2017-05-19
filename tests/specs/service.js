@@ -336,9 +336,8 @@ describe('service tests', function() {
                       "ItemRef":{"value":1},"Qty":1,"ClassRef":{"value":"5000000000000027881"}
                     }
                   },{
-                    "Amount": 100,
-                    "DetailType": "SubTotalLineDetail",
-                    "SubTotalLineDetail": {}
+                    "DetailType": "DescriptionOnly",
+                    "Description": 'Subtotal: $100'
                   },{
                     DetailType: 'DescriptionOnly',
                     Description: 'Management Fees:'
@@ -350,9 +349,8 @@ describe('service tests', function() {
                       "ItemRef":{"value":2},"Qty":1,"ClassRef":{"value":"5000000000000027881"}
                     }
                   },{
-                    "Amount": 100,
-                    "DetailType": "SubTotalLineDetail",
-                    "SubTotalLineDetail": {}
+                    "DetailType": "DescriptionOnly",
+                    "Description": 'Subtotal: $100'
                   }],
                   "CustomerRef":{
                     "value":3
