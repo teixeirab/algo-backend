@@ -1,11 +1,13 @@
 select
 series_number as 'Series Number',
+previous_payment_date as 'Previous Payment Date',
 loan_payment_date as 'Loan Payment Date',
-nominal_outstanding as 'Nominal Outstanding',
-simple_interest_income - simple_interest_repayment as 'Simple Interest Income',
-compounded_interest_income - compounded_interest_repayment as 'Compounded Interest Income',
+nominal_outstanding as 'Nominal Basis',
+simple_interest_rate as 'Interest Rate',
 simple_interest_repayment + compounded_interest_repayment as 'Interest Repayment',
-simple_interest_income + compounded_interest_income as 'Total Interest Income',
+simple_interest_income as 'Interest Income',
+principal_repayment as 'Principal Repayment',
+floor(((simple_interest_repayment + compounded_interest_repayment + simple_interest_income + principal_repayment)/ (nominal_outstanding/1000))*100) / 100 as 'Cash Round Up',
 invoice_sent as 'Invoice Sent'
 from (
 
@@ -28,7 +30,10 @@ case when compounded_interest_rate is null then 0 else
 					  day_count_convention) end,0) as compounded_interest_income,
 coalesce(interest_repayment_calc(series_number, loan_payment_date, previous_payment_date, interest_accrual_date, day_count_convention, simple_interest_rate), 0) as simple_interest_repayment,
 coalesce(interest_repayment_calc(series_number, loan_payment_date, previous_payment_date, interest_accrual_date, day_count_convention, compounded_interest_rate), 0) as compounded_interest_repayment,
-invoice_sent
+calculate_principal_repayment(nominal_outstanding, id, series_number) principal_repayment,
+invoice_sent,
+simple_interest_rate,
+coalesce(previous_payment_date, interest_accrual_date) previous_payment_date
 from (
 SELECT
         `a`.`id` AS `id`,
