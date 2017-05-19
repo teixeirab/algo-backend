@@ -79,6 +79,7 @@ SELECT
 			(select series_number, min(loan_payment_date) loan_payment_date from (select series_number, datediff(loan_payment_date, curdate()) x, loan_payment_date from advances_schedule) a where x > 0 group by series_number) q on (p.series_number = q.series_number and p.loan_payment_date = q.loan_payment_date)
 		) a
         join advances_info b on (a.series_number = b.series_number)
+				{param0}
 	--  where a.series_number = 19
     -- where -- a.series_number= '{param0}'
 ) t1

@@ -4,7 +4,7 @@ const moment = require('moment')
 const async = require('async')
 const _ = require('lodash')
 
-module.exports = function(Configs, QuickBookService) {
+module.exports = function(Configs, QuickBookService, SqlService) {
   const that = this
 
   this.generateSetUpInvoice = function(req, res) {
@@ -62,6 +62,18 @@ module.exports = function(Configs, QuickBookService) {
         res.send(result)
       }).catch((err) => {
         res.status(403).send(err)
+      })
+    })
+  }
+
+  this.generateInterestInvoice = function(req, res) {
+    const seriesNumber = req.params.seriesNumber
+    SqlService.viewData('current_interest', `where a.series_number=${seriesNumber}`).then((results) => {
+      if(!results || !results.length) {
+        return res.status(403).send()
+      }
+      QuickBookService.createInterestInvoice(results[0]).then(() => {
+        res.status(200).send()
       })
     })
   }

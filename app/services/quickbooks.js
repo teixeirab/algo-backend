@@ -3,6 +3,7 @@ const async      = require('async')
 const _          = require('lodash')
 const moment     = require('moment')
 const QuickBooks = require('node-quickbooks')
+const numeral    = require('numeral')
 
 module.exports = function(
   app,
@@ -808,6 +809,148 @@ module.exports = function(
           that.createMaintenanceInvoiceFromFlex(params).then(() => {
             cb()
           }).catch(cb)
+        }
+      ], (err) => {
+        if (err) {
+          return reject(err)
+        }
+        resolve()
+      })
+    })
+  }
+
+  this.createInterestInvoice = function(interest) {
+    const seriesNumber = interest['Series Number']
+    return new Promise((resolve, reject) => {
+      let qbConfig
+      async.waterfall([
+        (cb) => {
+          that.getQBConfigsBySeriesNumber(seriesNumber).then((_qbConfig) => {
+            qbConfig = _qbConfig
+            cb()
+          }).catch((err) => {
+            cb(err)
+          })
+        },
+        (cb) => {
+          const seriesName = `Series ${seriesNumber}`
+          QBClassModel.findOne({
+            where: {
+              fully_qualified_name: seriesName,
+              qb_account: qbConfig.account
+            }
+          }).then((cls) => {
+            if(!cls) {
+              return cb({err: `invalid series name ${seriesName}`})
+            }
+            cb(undefined, cls)
+          })
+        },
+        (cls, cb) => {
+          let lines = []
+          if (interest['Previous Payment Date'] || interest['Loan Payment Date']) {
+            lines.push({
+              DetailType: 'DescriptionOnly',
+              Description: 'Interest Notification - Period ' + moment(interest['Previous Payment Date']).format('DD/MM/YYYY') + ' - ' + moment(interest['Loan Payment Date']).format('DD/MM/YYYY')
+            })
+          }
+          if (interest['Interest Rate']) {
+            lines.push({
+              DetailType: 'DescriptionOnly',
+              Description: 'Interest Rate - ' + (interest['Interest Rate'] * 100).toFixed(2) + '%'
+            })
+          }
+          if (interest['Nominal Basis']) {
+            lines.push({
+              DetailType: 'DescriptionOnly',
+              Description: 'Nominal Basis - ' + numeral(interest['Nominal Basis']).format('$0,0.00')
+            })
+          }
+          async.eachSeries(['Interest Payable', 'Purchased Accrued Interest', 'Cash Round Up'], (itemName, cb) => {
+            QBItemModel.findOne({
+              where: {
+                name: itemName,
+                qb_account: qbConfig.account
+              }
+            }).then((item) => {
+              if (!item) {
+                return cb()
+              }
+              let amount
+              if (item.name === 'Interest Payable') {
+                amount = interest['Interest Income']
+              }
+              if (item.name === 'Purchased Accrued Interest') {
+                amount = interest['Interest Repayment']
+              }
+              if (item.name === 'Cash Round Up') {
+                amount = interest['Cash Round Up']
+              }
+              if (amount) {
+                lines.push({
+                  Amount: amount,
+                  DetailType: "SalesItemLineDetail",
+                  Description: item.description,
+                  SalesItemLineDetail: {
+                    ItemRef: {
+                      value: item.id
+                    },
+                    ClassRef: {
+                      value: cls.id
+                    },
+                    Qty: 1
+                  }
+                })
+              }
+              cb()
+            })
+          }, (err) => {
+            let invoice = {Line: lines}
+            cb(err, invoice)
+          })
+        },
+        (invoice, cb) => {
+          SeriesProductInformationModel.findOne({
+            where: {
+              series_number: seriesNumber
+            }
+          }).then((seriesProductInfo) => {
+            const client_name = seriesProductInfo.client_name
+            QBCustomerModel.findOne({
+              where: {
+                fully_qualified_name: client_name,
+                qb_account: qbConfig.account
+              }
+            }).then((customer) => {
+              _.assign(invoice, {
+                CustomerRef: {
+                  value: customer.id
+                },
+                CurrencyRef: {
+                  value: customer.currency_code
+                },
+                BillEmail: {
+                  Address: customer.email
+                },
+                EmailStatus: 'NeedToSend',
+                CustomerMemo: {
+                  value:  customerMemo
+                }
+              })
+              cb(undefined, invoice)
+            })
+          })
+        },
+        (invoice, cb) => {
+          that.createInvoice({
+            qb_account_key: qbConfig.name,
+            invoice: invoice,
+            from_currency: 'USD'
+          }).then((result) => {
+            cb(undefined, result)
+          }).catch((err) => {
+            cb(err)
+          })
         }
       ], (err) => {
         if (err) {
