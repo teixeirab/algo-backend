@@ -296,8 +296,8 @@ describe('service tests', function() {
               {id: 3, name: 'arranger_fees', qb_account: flex_qb_account, description: 'item test desc'}
             ]],
             ['QBTheoremItemModel', [
-              {theorem_col: 'audit_fees', qb_item_id: 1, qb_account: issuer_qb_account},
-              {theorem_col: 'administrator_fees', qb_item_id: 2, qb_account: issuer_qb_account},
+              {theorem_col: 'audit_fees', qb_item_id: 1, qb_account: issuer_qb_account, category: 'operating'},
+              {theorem_col: 'administrator_fees', qb_item_id: 2, qb_account: issuer_qb_account, category: 'management'},
               {theorem_col: 'arranger_fees', qb_item_id: 3, qb_account: flex_qb_account}
             ]],
             ['QBCustomerModel', [
@@ -306,6 +306,9 @@ describe('service tests', function() {
             ]],
             ['SeriesProductInformationModel', [
               {series_number: seriesNumber, client_name: '0.9035172225072845', bloomberg_name: '', product_type: 'Fund', issue_date: new Date(), maturity_date: new Date(), region: '', nav_frequency: '', currency: ''}
+            ]],
+            ['SeriesNamesModel', [
+              {series_number: seriesNumber, series_name: 'Series Name 1', common_code: '1', isin: '1'}
             ]],
             ['QBAPIAccountModel', [
               {name: 'issuer', account: issuer_qb_account, token_expires_date: new Date(), consumer_key: 'qyprdmo0k4zNWYg02AAuGfqaoC1mAr', consumer_secret: 'vY0ivLWoS88RwfZzjTSbVs661O1rtcNMIB8Q8dHq', token: 'qyprdd2brFdkST5neF228WkeabLldEPBkPfusLrQQjAQmyx0', token_secret: '06EtkSduVSqaWRvVLLQkLQcSZjFTa7ZS7hXxET4I', realm_id: '123145808149854', use_sandbox: true, debug: false},
@@ -320,6 +323,12 @@ describe('service tests', function() {
                 assert.equal('issuer', params.qb_account_key)
                 let expectedInvoice = {
                   "Line":[{
+                    "DetailType":"DescriptionOnly",
+                    "Description":"For Series Name 1 from January 1st to December 31st"
+                  },{
+                    DetailType: 'DescriptionOnly',
+                    Description: 'Operating Fees:'
+                  },{
                     "Amount":100,
                     "DetailType":"SalesItemLineDetail",
                     "Description":"item test desc",
@@ -327,12 +336,23 @@ describe('service tests', function() {
                       "ItemRef":{"value":1},"Qty":1,"ClassRef":{"value":"5000000000000027881"}
                     }
                   },{
+                    "Amount": 100,
+                    "DetailType": "SubTotalLineDetail",
+                    "SubTotalLineDetail": {}
+                  },{
+                    DetailType: 'DescriptionOnly',
+                    Description: 'Management Fees:'
+                  },{
                     "Amount":100,
                     "DetailType":"SalesItemLineDetail",
                     "Description":"item test desc",
                     "SalesItemLineDetail":{
                       "ItemRef":{"value":2},"Qty":1,"ClassRef":{"value":"5000000000000027881"}
                     }
+                  },{
+                    "Amount": 100,
+                    "DetailType": "SubTotalLineDetail",
+                    "SubTotalLineDetail": {}
                   }],
                   "CustomerRef":{
                     "value":3
@@ -348,12 +368,15 @@ describe('service tests', function() {
                     "value":"Make checks payable in USD to: \n Bank: Bank of America \nAccount Name: FlexFunds ETP LLC \nAccount Number: 898067231257 \nRouting (wires): 026009593 SWIFT: BOFAUS3N \n(for all other currencies, please use BOFAUS6S) \nAddress: 495 Brickell Avenue. Miami, FL 33131 \n\nIf you have any questions concerning this invoice, \ncontact us at accounting@flexfundsetp.com"
                   }
                 }
-                assert.deepEqual(expectedInvoice, params.invoice)
+                assert.equal(JSON.stringify(expectedInvoice), JSON.stringify(params.invoice))
               }
               if (count === 2) {
                 assert.equal('flexfunds', params.qb_account_key)
                 let expectedInvoice = {
                   "Line":[{
+                    "DetailType":"DescriptionOnly",
+                    "Description":"For Series Name 1 from January 1st to December 31st"
+                  },{
                     "Amount":50,
                     "DetailType":"SalesItemLineDetail",
                     "Description":"item test desc",

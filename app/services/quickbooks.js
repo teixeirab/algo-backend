@@ -10,6 +10,7 @@ module.exports = function(
   QBAPIAccountModel,
   SeriesProductInformationModel,
   SeriesAgentInformationModel,
+  SeriesNamesModel,
   QBAccountIssuerModel,
   QBCustomerModel,
   QBClassModel,
@@ -452,67 +453,121 @@ module.exports = function(
         classId      = params.classId,
         qbAccount    = params.qbAccount
     return new Promise((resolve, reject) => {
-      QBInvoicesMaintenanceModel.findOne({
-        where: {
-          series_number: seriesNumber,
-          from: {
-            $gte: moment(from).startOf('day').toDate(),
-            $lte: moment(from).endOf('day').toDate()
-          },
-          to: {
-            $gte: moment(to).startOf('day').toDate(),
-            $lte: moment(to).endOf('day').toDate()
-          },
-          invoice_sent_date: null
-        }
-      }).then((fees) => {
-        if (!fees) {
-          return reject({err: `no maintenance fees found for series_number: ${seriesNumber}`})
-        }
-        QBItemModel.findAll({
-          where: {
-            qb_account: qbAccount
-          }
-        }).then((issuerItems) => {
-          QBTheoremItemModel.findAll({
+      async.waterfall([
+        (cb) => {
+          SeriesNamesModel.findOne({
             where: {
-              qb_account: qbAccount
+              series_number: seriesNumber
             }
-          }).then((theoremItems) => {
-            let issuerTheoremItems = _.remove(issuerItems, (issuerItem) => {
-              return _.find(theoremItems, (theoremItem) => {
-                if (!fees[theoremItem.theorem_col]) {
-                  return
+          }).then((seriesName) => {
+            if (!seriesName) {
+              return cb({err: `no series name found for series number: ${seriesNumber}`})
+            }
+            cb(undefined, seriesName)
+          })
+        },
+        (seriesName, cb) => {
+          QBInvoicesMaintenanceModel.findOne({
+            where: {
+              series_number: seriesNumber,
+              from: {
+                $gte: moment(from).startOf('day').toDate(),
+                $lte: moment(from).endOf('day').toDate()
+              },
+              to: {
+                $gte: moment(to).startOf('day').toDate(),
+                $lte: moment(to).endOf('day').toDate()
+              },
+              invoice_sent_date: null
+            }
+          }).then((fees) => {
+            if (!fees) {
+              return cb({err: `no maintenance fees found for series_number: ${seriesNumber}`})
+            }
+            QBItemModel.findAll({
+              where: {
+                qb_account: qbAccount
+              }
+            }).then((issuerItems) => {
+              QBTheoremItemModel.findAll({
+                where: {
+                  qb_account: qbAccount
                 }
-                let matched = theoremItem.qb_item_id == issuerItem.id
-                if (matched) {
-                  issuerItem.item_amount = fees[theoremItem.theorem_col]
-                }
-                return matched
+              }).then((theoremItems) => {
+                let issuerTheoremItems = _.remove(issuerItems, (issuerItem) => {
+                  return _.find(theoremItems, (theoremItem) => {
+                    if (!fees[theoremItem.theorem_col]) {
+                      return
+                    }
+                    let matched = theoremItem.qb_item_id == issuerItem.id
+                    if (matched) {
+                      issuerItem.item_amount = fees[theoremItem.theorem_col]
+                      issuerItem.category = theoremItem.category
+                    }
+                    return matched
+                  })
+                })
+
+                let groupedItems = _.groupBy(issuerTheoremItems, (issuerTheoremItem) => {
+                  return issuerTheoremItem.category
+                })
+
+                let lines = [{
+                  DetailType: 'DescriptionOnly',
+                  Description: `For ${seriesName.series_name} from ` + moment(from).format('MMMM Do') + ' to ' + moment(to).format('MMMM Do')
+                }]
+                Object.keys(groupedItems).forEach((category) => {
+                  let subTotal = 0
+                  if (category === 'management') {
+                    lines.push({
+                      DetailType: 'DescriptionOnly',
+                      Description: 'Management Fees:'
+                    })
+                  }
+                  if (category === 'operating') {
+                    lines.push({
+                      DetailType: 'DescriptionOnly',
+                      Description: 'Operating Fees:'
+                    })
+                  }
+                  groupedItems[category].forEach((item) => {
+                    let line = {
+                      Amount: item.item_amount,
+                      DetailType: "SalesItemLineDetail",
+                      Description: item.description,
+                      SalesItemLineDetail: {
+                        ItemRef: {
+                          value: item.id
+                        },
+                        Qty: 1
+                      }
+                    }
+                    if (classId) {
+                      line.SalesItemLineDetail.ClassRef = {
+                        value: classId
+                      }
+                    }
+                    subTotal += item.item_amount > 0 ? item.item_amount : 0
+                    lines.push(line)
+                  })
+                  if (subTotal && category !== 'null') {
+                    lines.push({
+                      Amount: subTotal,
+                      DetailType: "SubTotalLineDetail",
+                      SubTotalLineDetail: {}
+                    })
+                  }
+                })
+                cb(undefined, lines)
               })
             })
-            let lines = issuerTheoremItems.map((item) => {
-              let line = {
-                Amount: item.item_amount,
-                DetailType: "SalesItemLineDetail",
-                Description: item.description,
-                SalesItemLineDetail: {
-                  ItemRef: {
-                    value: item.id
-                  },
-                  Qty: 1
-                }
-              }
-              if (classId) {
-                line.SalesItemLineDetail.ClassRef = {
-                  value: classId
-                }
-              }
-              return line
-            })
-            resolve(lines)
           })
-        })
+        }
+      ], (err, lines) => {
+        if (err) {
+          return reject(err)
+        }
+        resolve(lines)
       })
     })
   }
@@ -669,8 +724,8 @@ module.exports = function(
         },
         (invoice, cb) => {
           if (clientName === 'IA Capital Structures (Ireland) PLC.') {
-            // clientName = 'IA Capital Structures (Ireland) PLC USD'
-            clientName = 'test'
+            clientName = 'IA Capital Structures (Ireland) PLC USD'
+            // clientName = 'test'
           }
           QBCustomerModel.findOne({
             where: {
