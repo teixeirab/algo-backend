@@ -281,10 +281,10 @@ describe('service tests', function() {
               }
             ]],
             ['SeriesAgentInformationModel', [
-              {series_number: seriesNumber, issuer: 'IA Capital Structures (Ireland) PLC.'}
+              {series_number: seriesNumber, issuer: 'test'}
             ]],
             ['QBAccountIssuerModel', [
-              {qb_account: issuer_qb_account, issuer: 'IA Capital Structures (Ireland) PLC.'}
+              {qb_account: issuer_qb_account, issuer: 'test'}
             ]],
             ['QBInvoicesMaintenanceModel', [
               {series_number: seriesNumber, from: new Date(from), to: new Date(to), audit_fees: 100, administrator_fees: 100, arranger_fees: 50}
@@ -301,7 +301,7 @@ describe('service tests', function() {
               {theorem_col: 'arranger_fees', qb_item_id: 3, qb_account: flex_qb_account}
             ]],
             ['QBCustomerModel', [
-              {id: 2, qb_account: flex_qb_account, fully_qualified_name: 'IA Capital Structures (Ireland) PLC USD', display_name: 'IA Capital Structures (Ireland) PLC.', currency_code: 'USD', email: flex_qb_account},
+              {id: 2, qb_account: flex_qb_account, fully_qualified_name: 'test', display_name: 'IA Capital Structures (Ireland) PLC.', currency_code: 'USD', email: flex_qb_account},
               {id: 3, qb_account: issuer_qb_account, fully_qualified_name: '0.9035172225072845', display_name: '0.9035172225072845', currency_code: 'USD', email: issuer_qb_account}
             ]],
             ['SeriesProductInformationModel', [
@@ -366,7 +366,13 @@ describe('service tests', function() {
                   "EmailStatus":"NeedToSend",
                   "CustomerMemo":{
                     "value":"Make checks payable in USD to: \n Bank: Bank of America \nAccount Name: FlexFunds ETP LLC \nAccount Number: 898067231257 \nRouting (wires): 026009593 SWIFT: BOFAUS3N \n(for all other currencies, please use BOFAUS6S) \nAddress: 495 Brickell Avenue. Miami, FL 33131 \n\nIf you have any questions concerning this invoice, \ncontact us at accounting@flexfundsetp.com"
-                  }
+                  },
+                  "CustomField":[{
+                    "DefinitionId":"1",
+                    "Name":"For",
+                    "Type":"StringType",
+                    "StringValue":"S1 - 01/01/2016 - 31/12/2016"
+                  }]
                 }
                 assert.equal(JSON.stringify(expectedInvoice), JSON.stringify(params.invoice))
               }
@@ -396,7 +402,13 @@ describe('service tests', function() {
                   "EmailStatus":"NeedToSend",
                   "CustomerMemo":{
                     "value":"Make checks payable in USD to: \n Bank: Bank of America \nAccount Name: FlexFunds ETP LLC \nAccount Number: 898067231257 \nRouting (wires): 026009593 SWIFT: BOFAUS3N \n(for all other currencies, please use BOFAUS6S) \nAddress: 495 Brickell Avenue. Miami, FL 33131 \n\nIf you have any questions concerning this invoice, \ncontact us at accounting@flexfundsetp.com"
-                  }
+                  },
+                  "CustomField":[{
+                    "DefinitionId":"2",
+                    "Name":"For",
+                    "Type":"StringType",
+                    "StringValue":"S1 - 01/01/2016 - 31/12/2016"
+                  }]
                 }
                 assert.deepEqual(expectedInvoice, params.invoice)
               }

@@ -800,11 +800,11 @@ module.exports = function(
   this.createMaintenanceInvoice = function(params) {
     return new Promise((resolve, reject) => {
       async.waterfall([
-        // (cb) => {
-        //   that.createMaintenanceInvoiceFromIssuer(params).then(() => {
-        //     cb()
-        //   }).catch(cb)
-        // },
+        (cb) => {
+          that.createMaintenanceInvoiceFromIssuer(params).then(() => {
+            cb()
+          }).catch(cb)
+        },
         (cb) => {
           that.createMaintenanceInvoiceFromFlex(params).then(() => {
             cb()
