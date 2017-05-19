@@ -33,6 +33,17 @@ module.exports = function(
                         "If you have any questions concerning this invoice, \n" +
                         "contact us at accounting@flexfundsetp.com"
 
+  const customFields = {
+    'For': {
+      'issuer_1': {
+        DefinitionId: '1'
+      },
+      'flexfunds': {
+        DefinitionId: '2'
+      }
+    }
+  }
+
   this.getQBO = (config) => {
     return new QuickBooks(
       config.consumer_key,
@@ -638,7 +649,13 @@ module.exports = function(
                 EmailStatus: 'NeedToSend',
                 CustomerMemo: {
                   value:  customerMemo
-                }
+                },
+                CustomField: [{
+                  DefinitionId: customFields['For'][qbConfig.name].DefinitionId,
+                  Name: 'For',
+                  Type: 'StringType',
+                  StringValue: `S${seriesNumber} - ` + moment(from).format('DD/MM/YYYY') + ' - ' + moment(to).format('DD/MM/YYYY')
+                }]
               })
               cb(undefined, invoice)
             })
@@ -724,8 +741,8 @@ module.exports = function(
         },
         (invoice, cb) => {
           if (clientName === 'IA Capital Structures (Ireland) PLC.') {
-            clientName = 'IA Capital Structures (Ireland) PLC USD'
-            // clientName = 'test'
+            // clientName = 'IA Capital Structures (Ireland) PLC USD'
+            clientName = 'test'
           }
           QBCustomerModel.findOne({
             where: {
@@ -749,7 +766,13 @@ module.exports = function(
               EmailStatus: 'NeedToSend',
               CustomerMemo: {
                 value:  customerMemo
-              }
+              },
+              CustomField: [{
+                DefinitionId: customFields['For'][qbConfig.name].DefinitionId,
+                Name: 'For',
+                Type: 'StringType',
+                StringValue: `S${seriesNumber} - ` + moment(from).format('DD/MM/YYYY') + ' - ' + moment(to).format('DD/MM/YYYY')
+              }]
             })
             cb(undefined, invoice)
           })
@@ -777,11 +800,11 @@ module.exports = function(
   this.createMaintenanceInvoice = function(params) {
     return new Promise((resolve, reject) => {
       async.waterfall([
-        (cb) => {
-          that.createMaintenanceInvoiceFromIssuer(params).then(() => {
-            cb()
-          }).catch(cb)
-        },
+        // (cb) => {
+        //   that.createMaintenanceInvoiceFromIssuer(params).then(() => {
+        //     cb()
+        //   }).catch(cb)
+        // },
         (cb) => {
           that.createMaintenanceInvoiceFromFlex(params).then(() => {
             cb()
