@@ -480,98 +480,80 @@ module.exports = function(
           })
         },
         (seriesName, cb) => {
-          QBInvoicesMaintenanceModel.findOne({
+          QBItemModel.findAll({
             where: {
-              series_number: seriesNumber,
-              from: {
-                $gte: moment(from).startOf('day').toDate(),
-                $lte: moment(from).endOf('day').toDate()
-              },
-              to: {
-                $gte: moment(to).startOf('day').toDate(),
-                $lte: moment(to).endOf('day').toDate()
-              },
-              invoice_sent_date: null
+              qb_account: qbAccount
             }
-          }).then((fees) => {
-            if (!fees) {
-              return cb({err: `no maintenance fees found for series_number: ${seriesNumber}`})
-            }
-            QBItemModel.findAll({
+          }).then((issuerItems) => {
+            QBTheoremItemModel.findAll({
               where: {
                 qb_account: qbAccount
               }
-            }).then((issuerItems) => {
-              QBTheoremItemModel.findAll({
-                where: {
-                  qb_account: qbAccount
-                }
-              }).then((theoremItems) => {
-                let issuerTheoremItems = _.remove(issuerItems, (issuerItem) => {
-                  return _.find(theoremItems, (theoremItem) => {
-                    if (!fees[theoremItem.theorem_col]) {
-                      return
-                    }
-                    let matched = theoremItem.qb_item_id == issuerItem.id
-                    if (matched) {
-                      issuerItem.item_amount = fees[theoremItem.theorem_col]
-                      issuerItem.category = theoremItem.category
-                    }
-                    return matched
-                  })
-                })
-
-                let groupedItems = _.groupBy(issuerTheoremItems, (issuerTheoremItem) => {
-                  return issuerTheoremItem.category
-                })
-
-                let lines = [{
-                  DetailType: 'DescriptionOnly',
-                  Description: `For ${seriesName.series_name} from ` + moment(from).format('MMMM Do') + ' to ' + moment(to).format('MMMM Do')
-                }]
-                Object.keys(groupedItems).forEach((category) => {
-                  let subTotal = 0
-                  if (category === 'management') {
-                    lines.push({
-                      DetailType: 'DescriptionOnly',
-                      Description: 'Management Fees:'
-                    })
+            }).then((theoremItems) => {
+              let issuerTheoremItems = _.remove(issuerItems, (issuerItem) => {
+                return _.find(theoremItems, (theoremItem) => {
+                  if (!maintenanceFees[theoremItem.theorem_col]) {
+                    return
                   }
-                  if (category === 'operating') {
-                    lines.push({
-                      DetailType: 'DescriptionOnly',
-                      Description: 'Operating Fees:'
-                    })
+                  let matched = theoremItem.qb_item_id == issuerItem.id
+                  if (matched) {
+                    issuerItem.item_amount = maintenanceFees[theoremItem.theorem_col]
+                    issuerItem.category = theoremItem.category
                   }
-                  groupedItems[category].forEach((item) => {
-                    let line = {
-                      Amount: item.item_amount,
-                      DetailType: "SalesItemLineDetail",
-                      Description: item.description,
-                      SalesItemLineDetail: {
-                        ItemRef: {
-                          value: item.id
-                        },
-                        Qty: 1
-                      }
-                    }
-                    if (classId) {
-                      line.SalesItemLineDetail.ClassRef = {
-                        value: classId
-                      }
-                    }
-                    subTotal += item.item_amount > 0 ? item.item_amount : 0
-                    lines.push(line)
-                  })
-                  if (subTotal && category !== 'null') {
-                    lines.push({
-                      DetailType: 'DescriptionOnly',
-                      Description: 'Subtotal: $' + subTotal
-                    })
-                  }
+                  return matched
                 })
-                cb(undefined, lines)
               })
+
+              let groupedItems = _.groupBy(issuerTheoremItems, (issuerTheoremItem) => {
+                return issuerTheoremItem.category
+              })
+
+              let lines = [{
+                DetailType: 'DescriptionOnly',
+                Description: `For ${seriesName.series_name} from ` + moment(from).format('MMMM Do') + ' to ' + moment(to).format('MMMM Do')
+              }]
+              Object.keys(groupedItems).forEach((category) => {
+                let subTotal = 0
+                if (category === 'management') {
+                  lines.push({
+                    DetailType: 'DescriptionOnly',
+                    Description: 'Management Fees:'
+                  })
+                }
+                if (category === 'operating') {
+                  lines.push({
+                    DetailType: 'DescriptionOnly',
+                    Description: 'Operating Fees:'
+                  })
+                }
+                groupedItems[category].forEach((item) => {
+                  let line = {
+                    Amount: item.item_amount,
+                    DetailType: "SalesItemLineDetail",
+                    Description: item.description,
+                    SalesItemLineDetail: {
+                      ItemRef: {
+                        value: item.id
+                      },
+                      Qty: 1
+                    }
+                  }
+                  if (classId) {
+                    line.SalesItemLineDetail.ClassRef = {
+                      value: classId
+                    }
+                  }
+                  subTotal += item.item_amount > 0 ? item.item_amount : 0
+                  lines.push(line)
+                })
+                if (subTotal && category !== 'null') {
+                  lines.push({
+                    DetailType: 'DescriptionOnly',
+                    Description: 'Subtotal: $' + subTotal
+                  })
+                }
+              })
+              cb(undefined, lines)
             })
           })
         }
