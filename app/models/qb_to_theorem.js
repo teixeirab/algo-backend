@@ -13,6 +13,10 @@ module.exports = function(FlexFundsDB, Sequelize) {
       type: Sequelize.STRING,
       allowNull: false,
       primaryKey: true
+    },
+    category: {
+      type: Sequelize.STRING,
+      allowNull: true
     }
   }, {
     tableName: 'qb_to_theorem'
