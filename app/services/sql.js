@@ -73,7 +73,7 @@ module.exports = function(FlexFundsDB) {
 
   this.viewData = function(query_name, param){
       var query = require("../models/queries/" + query_name +".txt");
-      param = param ? param : ''
+      param = param && param !== 'undefined' ? param : ''
       query = replaceAll(query, "{param0}", param);
 
       return FlexFundsDB.query(query, { type: FlexFundsDB.QueryTypes.SELECT })
