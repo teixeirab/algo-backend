@@ -19,6 +19,7 @@ describe('service tests', function() {
     'QBCustomerModel',
     'QBInvoiceModel',
     'QBClassModel',
+    'QBInvoicesMaintenanceModel',
     'QBAccountIssuerModel',
     'FlexFundsDB'
   ]
@@ -222,8 +223,13 @@ describe('service tests', function() {
       });
     });
     describe('api', function () {
-      describe('invoice', function () {
-        it('generate setup invoice', function (done) {
+      describe.only('invoice', function () {
+        afterEach(function () {
+          if(vars['QuickBookService'].createInvoice.restore) {
+            vars['QuickBookService'].createInvoice.restore()
+          }
+        });
+        xit('generate setup invoice', function (done) {
           helper.batchCreateInstances([
             ['QBClassModel', [
               {
@@ -288,7 +294,8 @@ describe('service tests', function() {
               {qb_account: issuer_qb_account, issuer: 'test'}
             ]],
             ['QBInvoicesMaintenanceModel', [
-              {series_number: seriesNumber, from: new Date(from), to: new Date(to), audit_fees: 100, administrator_fees: 100, arranger_fees: 50}
+              {series_number: seriesNumber, from: new Date(from), to: new Date(to), audit_fees: 100, administrator_fees: 100, arranger_fees: 50},
+              {series_number: 2, from: new Date(from), to: new Date(to), audit_fees: 100, administrator_fees: 100, arranger_fees: 50}
             ]],
             ['QBItemModel', [
               {id: 1, name: 'audit_fees', qb_account: issuer_qb_account, description: 'item test desc'},
@@ -423,13 +430,19 @@ describe('service tests', function() {
                 to: to
               })
               .end((err, res) => {
-                console.log(res.body)
                 assert.equal(2, count)
-                done()
+                vars['QBInvoicesMaintenanceModel'].findAll().then((invs) => {
+                  assert.equal(2, invs.length)
+                  assert.equal(1, invs[0].series_number)
+                  assert(invs[0].invoice_sent_date)
+                  assert.equal(2, invs[1].series_number)
+                  assert(!invs[1].invoice_sent_date)
+                  done()
+                })
               })
           })
         });
-        it.only('generate interest invoice', function (done) {
+        it('generate interest invoice', function (done) {
           const seriesNumber = 1, issuer_qb_account = 'kata.choi@gmail.com'
           helper.batchCreateInstances([
             ['QBClassModel', [

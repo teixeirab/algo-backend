@@ -1,7 +1,9 @@
 /* jshint indent: 2 */
 
+const moment = require('moment')
+
 module.exports = function(FlexFundsDB, Sequelize) {
-  return FlexFundsDB.define('qb_invoices_maintenance', {
+  let model = FlexFundsDB.define('qb_invoices_maintenance', {
     series_number: {
       type: Sequelize.STRING,
       allowNull: false,
@@ -98,4 +100,22 @@ module.exports = function(FlexFundsDB, Sequelize) {
   }, {
     tableName: 'qb_invoices_maintenance'
   });
+
+  model.getOneBySeriesNumberInPeriod = function(seriesNumber, from, to) {
+    return this.findOne({
+      where: {
+        series_number: seriesNumber,
+        from: {
+          $gte: moment(from).startOf('day').toDate(),
+          $lte: moment(from).endOf('day').toDate()
+        },
+        to: {
+          $gte: moment(to).startOf('day').toDate(),
+          $lte: moment(to).endOf('day').toDate()
+        },
+        invoice_sent_date: null
+      }
+    })
+  }
+  return model
 };

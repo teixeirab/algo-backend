@@ -459,11 +459,12 @@ module.exports = function(
   }
 
   this.getInvoiceLinesForMaintenanceFees = function(params) {
-    let seriesNumber = params.seriesNumber,
-        from         = params.from,
-        to           = params.to,
-        classId      = params.classId,
-        qbAccount    = params.qbAccount
+    let maintenanceFees = params.maintenanceFees,
+        seriesNumber    = maintenanceFees.series_number,
+        from            = maintenanceFees.from,
+        to              = maintenanceFees.to,
+        classId         = params.classId,
+        qbAccount       = params.qbAccount
     return new Promise((resolve, reject) => {
       async.waterfall([
         (cb) => {
@@ -583,10 +584,10 @@ module.exports = function(
     })
   }
 
-  this.createMaintenanceInvoiceFromIssuer = function(params) {
-    const seriesNumber = params.series_number
-    const from         = params.from
-    const to           = params.to
+  this.createMaintenanceInvoiceFromIssuer = function(maintenanceFees) {
+    const seriesNumber = maintenanceFees.series_number
+    const from         = maintenanceFees.from
+    const to           = maintenanceFees.to
     return new Promise((resolve, reject) => {
       let qbConfig
       async.waterfall([
@@ -614,9 +615,7 @@ module.exports = function(
         },
         (cls, cb) => {
           that.getInvoiceLinesForMaintenanceFees({
-            seriesNumber: seriesNumber,
-            from: from,
-            to: to,
+            maintenanceFees: maintenanceFees,
             classId: cls.id,
             qbAccount: qbConfig.account
           }).then((lines) => {
@@ -681,10 +680,10 @@ module.exports = function(
     })
   }
 
-  this.createMaintenanceInvoiceFromFlex = function(params) {
-    const seriesNumber = params.series_number
-    const from         = params.from
-    const to           = params.to
+  this.createMaintenanceInvoiceFromFlex = function(maintenanceFees) {
+    const seriesNumber = maintenanceFees.series_number
+    const from         = maintenanceFees.from
+    const to           = maintenanceFees.to
     let clientName
     return new Promise((resolve, reject) => {
       let qbConfig
@@ -730,9 +729,7 @@ module.exports = function(
         },
         (cls, cb) => {
           that.getInvoiceLinesForMaintenanceFees({
-            seriesNumber: seriesNumber,
-            from: from,
-            to: to,
+            maintenanceFees: maintenanceFees,
             classId: cls.id,
             qbAccount: qbConfig.account
           }).then((lines) => {
@@ -798,23 +795,42 @@ module.exports = function(
   }
 
   this.createMaintenanceInvoice = function(params) {
+    let seriesNumber = params.series_number,
+        from         = params.from,
+        to           = params.to
     return new Promise((resolve, reject) => {
       async.waterfall([
         (cb) => {
-          that.createMaintenanceInvoiceFromIssuer(params).then(() => {
-            cb()
+          QBInvoicesMaintenanceModel
+            .getOneBySeriesNumberInPeriod(seriesNumber, from, to)
+            .then((maintenanceFees) => {
+              if (!maintenanceFees) {
+                return cb({err: `no maintenance fees found for series_number: ${seriesNumber}`})
+              }
+              cb(undefined, maintenanceFees)
+            })
+        },
+        (maintenanceFees, cb) => {
+          that.createMaintenanceInvoiceFromIssuer(maintenanceFees).then(() => {
+            cb(undefined, maintenanceFees)
           }).catch(cb)
         },
-        (cb) => {
-          that.createMaintenanceInvoiceFromFlex(params).then(() => {
-            cb()
+        (maintenanceFees, cb) => {
+          that.createMaintenanceInvoiceFromFlex(maintenanceFees).then(() => {
+            cb(undefined, maintenanceFees)
           }).catch(cb)
+        },
+        (maintenanceFeesModel, cb) => {
+          maintenanceFeesModel.invoice_sent_date = new Date()
+          maintenanceFeesModel.save().then(() => {
+            cb(undefined, maintenanceFeesModel)
+          })
         }
-      ], (err) => {
+      ], (err, maintenanceFeesModel) => {
         if (err) {
           return reject(err)
         }
-        resolve()
+        resolve(maintenanceFeesModel)
       })
     })
   }

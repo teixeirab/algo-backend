@@ -61,6 +61,7 @@ module.exports = function(Configs, QuickBookService, SqlService) {
       QuickBookService.createMaintenanceInvoice(params).then((result) => {
         res.send(result)
       }).catch((err) => {
+        console.log(err)
         res.status(403).send(err)
       })
     })

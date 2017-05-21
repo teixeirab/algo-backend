@@ -1,0 +1,23 @@
+select
+  series_number as `Series Number`,
+  `from` as `From Date`,
+  `to` as `To Date`,
+  case when invoice_sent_date is null then 'No' else 'Yes' End as `Invoice Sent`,
+  invoice_sent_date as `Invoice Sent Date`,
+  audit_fees as `Audit Fees`,
+  price_dissemination_fees as `Price Dissemination Fees`,
+  transfer_agent_fees as `Transfer Agent Fees`,
+  arranger_fees as `Arranger Fees`,
+  administrator_fees as `Administrator Fees`,
+  inventory_cost as `Inventory Cost`,
+  listing_agent_fees as `Listing Agent Fees`,
+  transaction_fees as `Transaction Fees`,
+  annual_series_fees as `Annual Series Fees`,
+  operating_fees_credit as `Operating Fees Credit`,
+  expenses_credit as `Expenses Credit`,
+  external_expenses_credit as `External Expenses Credit`,
+  bank_fees as `Bank Fees`,
+  performance_fee as `Performance Fee`,
+  premium_discount_paid as `Premium Discount Paid`,
+  accounting_fees as `Accounting Fees`
+from qb_invoices_maintenance
