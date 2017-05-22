@@ -150,11 +150,11 @@ module.exports = function(
     })
   }
 
-  /*
+
   this.generateLegalInvoice = function(params){
     const customer_name = params.customer_name;
     const series_number = params.series_number;
-    const product_type = params.product_type.toUpperCase();
+    const type = type;
     const qbAccountKey = 'flexfunds';
     const qbConfig = Configs.quickbooks[qbAccountKey];
     const className = 'Series';
@@ -173,26 +173,14 @@ module.exports = function(
             cb(undefined, customer)
           })
         },
-        (customer, cb) => {
-          QBClassModel.findOne({
-            where: {
-              fully_qualified_name: className
-            }
-          }).then((cls) => {
-            if(!cls) {
-              return cb({err: `invalid product type ${product_type}`})
-            }
-            cb(undefined, customer, cls)
-          })
-        },
         (customer, cls, cb) => {
           QBInvoiceTypeItemModel.findAll({
             where: {
-              invoice_type: product_type
+              invoice_type: type
             }
           }).then((items) => {
             if (!items.length) {
-              return cb({err: `no items found for product type ${product_type}`})
+              return cb({err: `no items found for product type ${type}`})
             }
             async.eachSeries(items, (item, _cb) => {
               QBItemModel.findOne({
@@ -225,7 +213,7 @@ module.exports = function(
               })
               lines.unshift({
                 DetailType: 'DescriptionOnly',
-                Description: `Setup Fees for FlexETP ${cls.name} - ${series_name}`
+                Description: `Legal Fees for FlexETP ${cls.name} - ${series_number}`
               })
               let invoice = {
                 Line: lines,
@@ -281,7 +269,7 @@ module.exports = function(
     })
 
   }
-  */
+
 
   this.generateSetUpInvoice = function(params) {
     const customer_name = params.customer_name
