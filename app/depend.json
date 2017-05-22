@@ -44,6 +44,7 @@
         "QBInvoiceTypeItemModel": "./models/qb_invoice_type_item",
         "QBInvoiceModel": "./models/qb_invoice",
         "QBInvoicesMaintenanceModel": "./models/qb_invoices_maintenance",
+        "QBExtraordinaryFeesModel": "./models/qb_extraordinary_fees",
 
         "CommonService": "./services/common",
         "SqlService": "./services/sql",
