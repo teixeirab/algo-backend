@@ -51,15 +51,18 @@
         "PerformanceService": "./services/performance",
         "LoanService": "./services/loan",
         "QuickBookService": "./services/quickbooks",
+        "JenkinsService": "./services/jenkins",
 
         "UserController": "./controllers/user",
         "DataController": "./controllers/data",
         "SeriesController": "./controllers/series",
         "QBController": "./controllers/qb",
+        "JenkinsController": "./controllers/jenkins",
 
         "Route": "./routes",
         "SeriesRoute": "./routes/series",
         "QBRoute": "./routes/qb",
+        "JenkinsRoute": "./routes/jenkins",
 
         "Utils": "./utils",
 
