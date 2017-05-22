@@ -13,9 +13,11 @@ module.exports = function(Configs) {
     let buildParams = params.buildParams
     let jobUrl = Configs.jenkins.url + `/job/${jobName}`
     let buildParamQuery = 'table=' + jobName
-    Object.keys(buildParams).forEach((key) => {
-      buildParamQuery += `&${key}=${buildParams[key]}`
-    })
+    if(buildParams) {
+      Object.keys(buildParams).forEach((key) => {
+        buildParamQuery += `&${key}=${buildParams[key]}`
+      })
+    }
     let options = {
       url: jobUrl + `/buildWithParameters?${buildParamQuery}`,
       method: 'POST'

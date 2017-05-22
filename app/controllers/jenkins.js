@@ -37,5 +37,15 @@ module.exports = function(Configs, JenkinsService) {
     });
   }
 
+  this.sendMaintenanceFeesInvoices = function(req, res) {
+    JenkinsService.triggerJenkinsBuild({
+      jobName: 'qb_invoices_maintenance_send'
+    }).then((result) => {
+      res.send(result)
+    }).catch((err) => {
+      res.status(403).send(err)
+    })
+  }
+
   return this
 }
