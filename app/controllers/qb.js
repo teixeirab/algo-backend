@@ -37,6 +37,36 @@ module.exports = function(Configs, QuickBookService, SqlService) {
     });
   }
 
+  this.generateLegalInvoice = function(req, res) {
+    req.checkBody({
+      customer_name: {
+        notEmpty: true,
+        errorMessage: 'Invalid customer_name'
+      },
+      type: {
+        matches: {
+          options: [/'Amendment: EUR 3500', 'Amendment: EUR 7000', 'Tranche: EUR 500', 'Pre-Issuance Amendment: EUR 1000', 'Pre-Issuance Amendment: EUR 500'/i]
+        },
+        errorMessage: 'Invalid type'
+      },
+      series_number: {
+        notEmpty: true,
+        errorMessage: 'Require series_name'
+      }
+    })
+    req.getValidationResult().then(function(result) {
+      if (!result.isEmpty()) {
+        return res.status(403).send({err: result.array()})
+      }
+      const params = req.body
+      QuickBookService.generateLegalInvoice(params).then((result) => {
+        res.send(result)
+      }).catch((err) => {
+        res.status(403).send(err)
+      })
+    });
+  }
+
   this.generateMaintenanceInvoice = function(req, res) {
     const seriesNumber = req.params.seriesNumber
     req.checkBody({
