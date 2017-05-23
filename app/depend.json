@@ -21,7 +21,7 @@
         "PershingTradesModel": "./models/pershing_trades",
         "AdvancesHolidaysModel": "./models/advances_holidays",
         "AdvancesInfoModel": "./models/advances_info",
-        "AdvancesInterestSchedule": "./models/advances_schedule",
+        "AdvancesInterestScheduleModel": "./models/advances_schedule",
         "AdvancesRepaymentsModel": "./models/advances_repayments",
         "CounterpartiesModel": "./models/counterparties",
         "BorrowersModel": "./models/borrowers",

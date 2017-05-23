@@ -16,6 +16,7 @@ describe('service tests', function() {
     'TheoremBalanceSheetModel',
     'SeriesProductInformationModel',
     'SeriesAgentInformationModel',
+    'AdvancesInterestScheduleModel',
     'QBCustomerModel',
     'QBInvoiceModel',
     'QBClassModel',
@@ -470,16 +471,25 @@ describe('service tests', function() {
             ['SeriesProductInformationModel', [
               {series_number: seriesNumber, client_name: '0.9035172225072845', bloomberg_name: '', product_type: 'Fund', issue_date: new Date(), maturity_date: new Date(), region: '', nav_frequency: '', currency: ''}
             ]],
+            ['AdvancesInterestScheduleModel', [
+              {id: 1, series_number: seriesNumber, loan_payment_date: new Date(2017, 1, 1), interest_determination_date: new Date(2017, 2, 1), series_interest_payment_date: new Date(2017, 2, 1), previous_payment_date: new Date(2016, 0, 1), invoice_sent: 'No'},
+              {id: 2, series_number: seriesNumber, loan_payment_date: new Date(2017, 1, 1), interest_determination_date: new Date(2017, 2, 1), series_interest_payment_date: new Date(2017, 2, 1), previous_payment_date: new Date(2017, 0, 1), invoice_sent: 'No'},
+              {id: 3, series_number: 2, loan_payment_date: new Date(2017, 1, 1), interest_determination_date: new Date(2017, 2, 1), series_interest_payment_date: new Date(2017, 2, 1), previous_payment_date: new Date(2017, 0, 1), invoice_sent: 'No'}
+            ]],
             ['QBAPIAccountModel', [
               {name: 'issuer_1', account: issuer_qb_account, token_expires_date: new Date(), consumer_key: 'qyprdmo0k4zNWYg02AAuGfqaoC1mAr', consumer_secret: 'vY0ivLWoS88RwfZzjTSbVs661O1rtcNMIB8Q8dHq', token: 'qyprdd2brFdkST5neF228WkeabLldEPBkPfusLrQQjAQmyx0', token_secret: '06EtkSduVSqaWRvVLLQkLQcSZjFTa7ZS7hXxET4I', realm_id: '123145808149854', use_sandbox: true, debug: false}
+            ]],
+            ['UsersModel', [
+              {user_type: 'Trading', first_name: '1', last_name: '1', cell_phone: '1', email: '1', password: '1', apikey: '123', status: 'A', use_sandbox: true, debug: false}
             ]]
           ], () => {
             let count = 0
+            let from = new Date(2017, 0, 1), to = new Date(2017, 1, 1)
             sinon.stub(vars['SqlService'], 'viewData').callsFake(function (params) {
               let interestView = [{
                 "Series Number": "1",
-                "Previous Payment Date": "2016-12-31T05:00:00.000Z",
-                "Loan Payment Date": "2017-06-30T05:00:00.000Z",
+                "Previous Payment Date": from,
+                "Loan Payment Date": to,
                 "Nominal Basis": 1083000,
                 "Interest Rate": 0.07,
                 "Interest Repayment": 12567.55,
@@ -499,7 +509,7 @@ describe('service tests', function() {
                   "Line": [
                     {
                       "DetailType": "DescriptionOnly",
-                      "Description": "Interest Notification - Period 31/12/2016 - 30/06/2017"
+                      "Description": `Interest Notification - Period ${moment(from).format('DD/MM/YYYY')} - ${moment(to).format('DD/MM/YYYY')}`
                     },
                     {
                       "DetailType": "DescriptionOnly",
@@ -575,10 +585,18 @@ describe('service tests', function() {
             })
             request(app)
               .post('/api/panel/qb/interest-invoice/' + seriesNumber)
-              .set('internal-key', '123')
+              .set('x-apikey', '123')
               .end((err, res) => {
-                console.log(res.body)
-                done()
+                vars['AdvancesInterestScheduleModel'].findAll().then((schedules) => {
+                  assert.equal(3, schedules.length)
+                  assert.equal('No', schedules[0].invoice_sent)
+                  assert.equal('No', schedules[2].invoice_sent)
+                  assert.equal('Yes', schedules[1].invoice_sent)
+                  assert.equal(formatDate(to), formatDate(schedules[1].loan_payment_date))
+                  assert.equal(formatDate(from), formatDate(schedules[1].previous_payment_date))
+                  assert.equal(seriesNumber, schedules[1].series_number)
+                  done()
+                })
               })
           })
         });

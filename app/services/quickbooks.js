@@ -12,6 +12,7 @@ module.exports = function(
   SeriesProductInformationModel,
   SeriesAgentInformationModel,
   SeriesNamesModel,
+  AdvancesInterestScheduleModel,
   QBAccountIssuerModel,
   QBCustomerModel,
   QBClassModel,
@@ -936,6 +937,23 @@ module.exports = function(
             cb(undefined, result)
           }).catch((err) => {
             cb(err)
+          })
+        },
+        (result, cb) => {
+          AdvancesInterestScheduleModel.findOne({
+            where: {
+              series_number: seriesNumber,
+              loan_payment_date: interest['Loan Payment Date'],
+              previous_payment_date: interest['Previous Payment Date']
+            }
+          }).then((schedule) => {
+            if (!schedule) {
+              return cb({err: `not found advances schedule, series_number:${seriesNumber}, loan_payment_date:${interest['Loan Payment Date']}, previous_payment_date:${interest['Prevous Payment Date']}}`})
+            }
+            schedule.invoice_sent = 'Yes'
+            schedule.save().then(() => {
+              cb()
+            })
           })
         }
       ], (err) => {
