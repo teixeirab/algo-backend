@@ -103,6 +103,23 @@ module.exports = function(
     })
   }
 
+  this.getQBCustomer = function(clientName, account) {
+    if(!_.get(Configs, 'quickbooks.useRealClientAccount')) {
+      clientName = 'test'
+    }
+
+    return QBCustomerModel.findOne({
+      where: {
+        qb_account: account,
+        $or: [{
+          fully_qualified_name: clientName
+        }, {
+          display_name: clientName
+        }]
+      }
+    })
+  }
+
   this.createInvoice = function(params) {
     const qbAccountKey = params.qb_account_key
     const fromCurrency = params.from_currency
@@ -163,12 +180,7 @@ module.exports = function(
     return new Promise((resolve, reject) => {
       async.waterfall([
         (cb) => {
-          QBCustomerModel.findOne({
-            where: {
-              qb_account: qbConfig.account,
-              display_name: customer_name
-            }
-          }).then((customer) => {
+          that.getQBCustomer(customer_name, qbConfig.account).then((customer) => {
             if(!customer) {
               return cb({err: `customer ${customer_name} not found`})
             }
@@ -282,12 +294,7 @@ module.exports = function(
     return new Promise((resolve, reject) => {
       async.waterfall([
         (cb) => {
-          QBCustomerModel.findOne({
-            where: {
-              qb_account: qbConfig.account,
-              display_name: customer_name
-            }
-          }).then((customer) => {
+          that.getQBCustomer(customer_name, qbConfig.account).then((customer) => {
             if(!customer) {
               return cb({err: `customer ${customer_name} not found`})
             }
@@ -601,12 +608,7 @@ module.exports = function(
             }
           }).then((seriesProductInfo) => {
             const client_name = seriesProductInfo.client_name
-            QBCustomerModel.findOne({
-              where: {
-                fully_qualified_name: client_name,
-                qb_account: qbConfig.account
-              }
-            }).then((customer) => {
+            that.getQBCustomer(client_name, qbConfig.account).then((customer) => {
               _.assign(invoice, {
                 CustomerRef: {
                   value: customer.id
@@ -709,15 +711,7 @@ module.exports = function(
           }).catch(cb)
         },
         (invoice, cb) => {
-          if (process.NODE_ENV !== 'prod') {
-            clientName = 'test'
-          }
-          QBCustomerModel.findOne({
-            where: {
-              fully_qualified_name: clientName,
-              qb_account: qbConfig.account
-            }
-          }).then((customer) => {
+          that.getQBCustomer(clientName, qbConfig.account).then((customer) => {
             if (!customer) {
               return cb({err: `no qb customer found: ${clientName}`})
             }
@@ -897,12 +891,7 @@ module.exports = function(
           })
         },
         (invoice, cb) => {
-          QBCustomerModel.findOne({
-            where: {
-              fully_qualified_name: clientName,
-              qb_account: qbConfig.account
-            }
-          }).then((customer) => {
+          that.getQBCustomer(clientName, qbConfig.account).then((customer) => {
             _.assign(invoice, {
               CustomerRef: {
                 value: customer.id

@@ -33,7 +33,8 @@ module.exports = {
       // realmId:         123145811581804,
       // useSandbox:      false,
       // debug:           false
-    }
+    },
+    useRealClientAccount: true
   },
   // dbLogging: console.log
 }
