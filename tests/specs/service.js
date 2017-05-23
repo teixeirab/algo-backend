@@ -699,17 +699,7 @@ describe('service tests', function() {
                 series_number: seriesNumber
               })
               .end((err, res) => {
-                console.log(res.body)
                 done()
-                // assert.equal(2, count)
-                // vars['QBInvoicesMaintenanceModel'].findAll().then((invs) => {
-                //   assert.equal(2, invs.length)
-                //   assert.equal(1, invs[0].series_number)
-                //   assert(invs[0].invoice_sent_date)
-                //   assert.equal(2, invs[1].series_number)
-                //   assert(!invs[1].invoice_sent_date)
-                //   done()
-                // })
               })
           })
         });
