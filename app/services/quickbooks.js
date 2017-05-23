@@ -261,7 +261,9 @@ module.exports = function(
                 },
                 PrivateNote: `S${series_number} ${type}`,
                 EmailStatus: 'NeedToSend',
-                CustomerMemo: customerMemo
+                CustomerMemo: {
+                  value: customerMemo
+                }
               }
               cb(undefined, invoice, items[0].item_currency)
             })

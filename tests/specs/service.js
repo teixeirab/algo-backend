@@ -682,7 +682,9 @@ describe('service tests', function() {
                 },
                 "PrivateNote": `S${seriesNumber} Amendment: EUR 3500`,
                 "EmailStatus": "NeedToSend",
-                "CustomerMemo": "Make checks payable in USD to: \n Bank: Bank of America \nAccount Name: FlexFunds ETP LLC \nAccount Number: 898067231257 \nRouting (wires): 026009593 SWIFT: BOFAUS3N \n(for all other currencies, please use BOFAUS6S) \nAddress: 495 Brickell Avenue. Miami, FL 33131 \n\nIf you have any questions concerning this invoice, \ncontact us at accounting@flexfundsetp.com"
+                "CustomerMemo": {
+                  value: "Make checks payable in USD to: \n Bank: Bank of America \nAccount Name: FlexFunds ETP LLC \nAccount Number: 898067231257 \nRouting (wires): 026009593 SWIFT: BOFAUS3N \n(for all other currencies, please use BOFAUS6S) \nAddress: 495 Brickell Avenue. Miami, FL 33131 \n\nIf you have any questions concerning this invoice, \ncontact us at accounting@flexfundsetp.com"
+                }
               }
 
               assert.equal(JSON.stringify(expectedInvoice), JSON.stringify(params.invoice))
