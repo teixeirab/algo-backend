@@ -263,7 +263,13 @@ module.exports = function(
                 EmailStatus: 'NeedToSend',
                 CustomerMemo: {
                   value: customerMemo
-                }
+                },
+                CustomField: [{
+                  DefinitionId: customFields['For'][qbConfig.name].DefinitionId,
+                  Name: 'For',
+                  Type: 'StringType',
+                  StringValue: `S${series_number} Legal Fees - ${type}`
+                }]
               }
               cb(undefined, invoice, items[0].item_currency)
             })

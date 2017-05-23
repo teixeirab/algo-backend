@@ -684,7 +684,13 @@ describe('service tests', function() {
                 "EmailStatus": "NeedToSend",
                 "CustomerMemo": {
                   value: "Make checks payable in USD to: \n Bank: Bank of America \nAccount Name: FlexFunds ETP LLC \nAccount Number: 898067231257 \nRouting (wires): 026009593 SWIFT: BOFAUS3N \n(for all other currencies, please use BOFAUS6S) \nAddress: 495 Brickell Avenue. Miami, FL 33131 \n\nIf you have any questions concerning this invoice, \ncontact us at accounting@flexfundsetp.com"
-                }
+                },
+                CustomField: [{
+                  DefinitionId: '2',
+                  Name: 'For',
+                  Type: 'StringType',
+                  StringValue: `S1 Legal Fees - Amendment: EUR 3500`
+                }]
               }
 
               assert.equal(JSON.stringify(expectedInvoice), JSON.stringify(params.invoice))
