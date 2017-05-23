@@ -131,6 +131,10 @@ module.exports = function(
           params.invoice.Line.forEach((line) => {
             line.Amount *= rate
           })
+          if (_.get(Configs, 'quickbooks.debugInvoiceSend')) {
+            console.log(JSON.stringify(params, undefined, 2))
+            return reject({err: 'in invoice send debug mode'})
+          }
           // console.log(JSON.stringify(params, undefined, 2))
           // return resolve()
           qbo.createInvoice(params.invoice, (err, result) => {
