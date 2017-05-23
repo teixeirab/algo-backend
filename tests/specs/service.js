@@ -16,6 +16,7 @@ describe('service tests', function() {
     'TheoremBalanceSheetModel',
     'SeriesProductInformationModel',
     'SeriesAgentInformationModel',
+    'BorrowersModel',
     'AdvancesInterestScheduleModel',
     'QBCustomerModel',
     'QBInvoiceModel',
@@ -466,15 +467,22 @@ describe('service tests', function() {
               {id: 3, name: 'Cash Round Up', qb_account: issuer_qb_account, description: 'test'}
             ]],
             ['QBCustomerModel', [
-              {id: 2, qb_account: issuer_qb_account, fully_qualified_name: '0.9035172225072845', display_name: 'IA Capital Structures (Ireland) PLC.', currency_code: 'USD', email: issuer_qb_account}
+              {id: 2, qb_account: issuer_qb_account, fully_qualified_name: '0.9035172225072845', display_name: 'IA Capital Structures (Ireland) PLC.', currency_code: 'USD', email: issuer_qb_account},
+              {id: 1, qb_account: issuer_qb_account, fully_qualified_name: 'test1', display_name: 'IA Capital Structures (Ireland) PLC.', currency_code: 'USD', email: issuer_qb_account},
+              {id: 3, qb_account: issuer_qb_account, fully_qualified_name: 'test2', display_name: 'IA Capital Structures (Ireland) PLC.', currency_code: 'USD', email: issuer_qb_account}
             ]],
             ['SeriesProductInformationModel', [
-              {series_number: seriesNumber, client_name: '0.9035172225072845', bloomberg_name: '', product_type: 'Fund', issue_date: new Date(), maturity_date: new Date(), region: '', nav_frequency: '', currency: ''}
+              {series_number: seriesNumber, client_name: 'test1', bloomberg_name: '', product_type: 'Fund', issue_date: new Date(), maturity_date: new Date(), region: '', nav_frequency: '', currency: ''}
             ]],
             ['AdvancesInterestScheduleModel', [
               {id: 1, series_number: seriesNumber, loan_payment_date: new Date(2017, 1, 1), interest_determination_date: new Date(2017, 2, 1), series_interest_payment_date: new Date(2017, 2, 1), previous_payment_date: new Date(2016, 0, 1), invoice_sent: 'No'},
               {id: 2, series_number: seriesNumber, loan_payment_date: new Date(2017, 1, 1), interest_determination_date: new Date(2017, 2, 1), series_interest_payment_date: new Date(2017, 2, 1), previous_payment_date: new Date(2017, 0, 1), invoice_sent: 'No'},
               {id: 3, series_number: 2, loan_payment_date: new Date(2017, 1, 1), interest_determination_date: new Date(2017, 2, 1), series_interest_payment_date: new Date(2017, 2, 1), previous_payment_date: new Date(2017, 0, 1), invoice_sent: 'No'}
+            ]],
+            ['BorrowersModel', [
+              {id: 1, client_name: 'test1', series_number: seriesNumber, contact_name: '1', percent_outstanding: 0.5},
+              {id: 2, client_name: 'test2', series_number: seriesNumber, contact_name: '1', percent_outstanding: 0.5},
+              {id: 3, client_name: 'test', series_number: 2, contact_name: '1', percent_outstanding: 0.5},
             ]],
             ['QBAPIAccountModel', [
               {name: 'issuer_1', account: issuer_qb_account, token_expires_date: new Date(), consumer_key: 'qyprdmo0k4zNWYg02AAuGfqaoC1mAr', consumer_secret: 'vY0ivLWoS88RwfZzjTSbVs661O1rtcNMIB8Q8dHq', token: 'qyprdd2brFdkST5neF228WkeabLldEPBkPfusLrQQjAQmyx0', token_secret: '06EtkSduVSqaWRvVLLQkLQcSZjFTa7ZS7hXxET4I', realm_id: '123145808149854', use_sandbox: true, debug: false}
@@ -490,19 +498,21 @@ describe('service tests', function() {
                 "Series Number": "1",
                 "Previous Payment Date": from,
                 "Loan Payment Date": to,
-                "Nominal Basis": 1083000,
-                "Interest Rate": 0.07,
-                "Interest Repayment": 12567.55,
-                "Interest Income": 37593.45,
+                "Nominal Basis": 10000,
+                "Interest Rate": 0.1,
+                "Interest Repayment": 10000,
+                "Interest Income": 10000,
                 "Principal Repayment": 0,
-                "Cash Round Up": 46.31,
+                "Cash Round Up": 100,
                 "Invoice Sent": "No"
               }]
               return new Promise((resolve, reject) => {
                 resolve(interestView)
               })
             });
+            count = 0
             sinon.stub(vars['QuickBookService'], 'createInvoice').callsFake(function (params) {
+              count++
               let expectedParams = {
                 "qb_account_key": "issuer_1",
                 "invoice": {
@@ -513,14 +523,14 @@ describe('service tests', function() {
                     },
                     {
                       "DetailType": "DescriptionOnly",
-                      "Description": "Interest Rate - 7.00%"
+                      "Description": "Interest Rate - 5.00%"
                     },
                     {
                       "DetailType": "DescriptionOnly",
-                      "Description": "Nominal Basis - $1,083,000.00"
+                      "Description": "Nominal Basis - $5,000.00"
                     },
                     {
-                      "Amount": 37593.45,
+                      "Amount": 10000/2,
                       "DetailType": "SalesItemLineDetail",
                       "Description": "item test desc",
                       "SalesItemLineDetail": {
@@ -534,7 +544,7 @@ describe('service tests', function() {
                       }
                     },
                     {
-                      "Amount": 12567.55,
+                      "Amount": 10000/2,
                       "DetailType": "SalesItemLineDetail",
                       "Description": "item test desc",
                       "SalesItemLineDetail": {
@@ -548,7 +558,7 @@ describe('service tests', function() {
                       }
                     },
                     {
-                      "Amount": 46.31,
+                      "Amount": 100/2,
                       "DetailType": "SalesItemLineDetail",
                       "Description": "test",
                       "SalesItemLineDetail": {
@@ -563,7 +573,7 @@ describe('service tests', function() {
                     }
                   ],
                   "CustomerRef": {
-                    "value": 2
+                    "value": count === 1 ? 1: 3
                   },
                   "CurrencyRef": {
                     "value": "USD"

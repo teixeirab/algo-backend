@@ -13,6 +13,7 @@ module.exports = function(
   SeriesAgentInformationModel,
   SeriesNamesModel,
   AdvancesInterestScheduleModel,
+  BorrowersModel,
   QBAccountIssuerModel,
   QBCustomerModel,
   QBClassModel,
@@ -805,7 +806,7 @@ module.exports = function(
     })
   }
 
-  this.createInterestInvoice = function(interest) {
+  this.createPartialInterestInvoice = function(interest, clientName, ratio) {
     const seriesNumber = interest['Series Number']
     return new Promise((resolve, reject) => {
       let qbConfig
@@ -843,13 +844,13 @@ module.exports = function(
           if (interest['Interest Rate']) {
             lines.push({
               DetailType: 'DescriptionOnly',
-              Description: 'Interest Rate - ' + (interest['Interest Rate'] * 100).toFixed(2) + '%'
+              Description: 'Interest Rate - ' + (interest['Interest Rate'] * 100 * ratio).toFixed(2) + '%'
             })
           }
           if (interest['Nominal Basis']) {
             lines.push({
               DetailType: 'DescriptionOnly',
-              Description: 'Nominal Basis - ' + numeral(interest['Nominal Basis']).format('$0,0.00')
+              Description: 'Nominal Basis - ' + numeral(interest['Nominal Basis'] * ratio).format('$0,0.00')
             })
           }
           async.eachSeries(['Interest Payable', 'Purchased Accrued Interest', 'Cash Round Up'], (itemName, cb) => {
@@ -874,7 +875,7 @@ module.exports = function(
               }
               if (amount) {
                 lines.push({
-                  Amount: amount,
+                  Amount: amount * ratio,
                   DetailType: "SalesItemLineDetail",
                   Description: item.description,
                   SalesItemLineDetail: {
@@ -896,35 +897,28 @@ module.exports = function(
           })
         },
         (invoice, cb) => {
-          SeriesProductInformationModel.findOne({
+          QBCustomerModel.findOne({
             where: {
-              series_number: seriesNumber
+              fully_qualified_name: clientName,
+              qb_account: qbConfig.account
             }
-          }).then((seriesProductInfo) => {
-            const client_name = seriesProductInfo.client_name
-            QBCustomerModel.findOne({
-              where: {
-                fully_qualified_name: client_name,
-                qb_account: qbConfig.account
+          }).then((customer) => {
+            _.assign(invoice, {
+              CustomerRef: {
+                value: customer.id
+              },
+              CurrencyRef: {
+                value: customer.currency_code
+              },
+              BillEmail: {
+                Address: customer.email
+              },
+              EmailStatus: 'NeedToSend',
+              CustomerMemo: {
+                value:  customerMemo
               }
-            }).then((customer) => {
-              _.assign(invoice, {
-                CustomerRef: {
-                  value: customer.id
-                },
-                CurrencyRef: {
-                  value: customer.currency_code
-                },
-                BillEmail: {
-                  Address: customer.email
-                },
-                EmailStatus: 'NeedToSend',
-                CustomerMemo: {
-                  value:  customerMemo
-                }
-              })
-              cb(undefined, invoice)
             })
+            cb(undefined, invoice)
           })
         },
         (invoice, cb) => {
@@ -960,6 +954,30 @@ module.exports = function(
           return reject(err)
         }
         resolve()
+      })
+    })
+  }
+
+  this.createInterestInvoice = function(interest) {
+    const seriesNumber = interest['Series Number']
+    return new Promise((resolve, reject) => {
+      BorrowersModel.findAll({
+        where: {
+          series_number: seriesNumber
+        }
+      }).then((borrowers) => {
+        async.eachSeries(borrowers, (borrower, cb) => {
+          that.createPartialInterestInvoice(interest, borrower.client_name, borrower.percent_outstanding).then(() => {
+            cb()
+          }).catch((err) => {
+            cb(err)
+          })
+        }, (err) => {
+          if (err) {
+            return reject(err)
+          }
+          resolve()
+        })
       })
     })
   }
