@@ -120,6 +120,8 @@ module.exports = function(Configs, QuickBookService, SqlService) {
       })
       QuickBookService.createInterestInvoice(interestData).then(() => {
         res.status(200).send()
+      }).catch((err) => {
+        res.status(403).send(err)
       })
     })
   }

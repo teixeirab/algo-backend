@@ -957,6 +957,9 @@ module.exports = function(
           series_number: seriesNumber
         }
       }).then((borrowers) => {
+        if (borrowers.length === 0) {
+          return reject({err: `no borrowers found for series_number:${seriesNumber}`})
+        }
         async.eachSeries(borrowers, (borrower, cb) => {
           that.createPartialInterestInvoice(interest, borrower.client_name, borrower.percent_outstanding).then(() => {
             cb()
