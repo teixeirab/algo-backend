@@ -280,8 +280,8 @@ describe('service tests', function() {
               {
                 id: "5000000000000027881",
                 qb_account: issuer_qb_account,
-                name: 'Series 1',
-                fully_qualified_name: 'Series 1'
+                name: '1',
+                fully_qualified_name: '1'
               },{
                 id: "5000000000000027882",
                 qb_account: flex_qb_account,
@@ -451,8 +451,8 @@ describe('service tests', function() {
               {
                 id: "5000000000000027881",
                 qb_account: issuer_qb_account,
-                name: 'Series 1',
-                fully_qualified_name: 'Series 1'
+                name: '1',
+                fully_qualified_name: '1'
               }
             ]],
             ['SeriesAgentInformationModel', [

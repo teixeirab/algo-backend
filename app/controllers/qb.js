@@ -45,13 +45,13 @@ module.exports = function(Configs, QuickBookService, SqlService) {
       },
       type: {
         matches: {
-          options: [/'Amendment: EUR 3500', 'Amendment: EUR 7000', 'Tranche: EUR 500', 'Pre-Issuance Amendment: EUR 1000', 'Pre-Issuance Amendment: EUR 500'/i]
+          options: [/Amendment: EUR 3500|Amendment: EUR 7000|Tranche: EUR 500|Pre-Issuance Amendment: EUR 1000|Pre-Issuance Amendment: EUR 500/i]
         },
         errorMessage: 'Invalid type'
       },
       series_number: {
         notEmpty: true,
-        errorMessage: 'Require series_name'
+        errorMessage: 'Require series_number'
       }
     })
     req.getValidationResult().then(function(result) {

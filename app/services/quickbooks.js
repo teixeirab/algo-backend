@@ -175,18 +175,35 @@ module.exports = function(
   this.generateLegalInvoice = function(params){
     const customer_name = params.customer_name;
     const series_number = params.series_number;
-    const type = type;
+    const type = params.type;
     const qbAccountKey = 'flexfunds';
-    const qbConfig = Configs.quickbooks[qbAccountKey];
-    const className = 'Series';
+    let qbConfig
     return new Promise((resolve, reject) => {
       async.waterfall([
+        (cb) => {
+          that.getAPIConfigs(qbAccountKey).then((_qbConfig) => {
+            qbConfig = _qbConfig
+            cb()
+          })
+        },
         (cb) => {
           that.getQBCustomer(customer_name, qbConfig.account).then((customer) => {
             if(!customer) {
               return cb({err: `customer ${customer_name} not found`})
             }
             cb(undefined, customer)
+          })
+        },
+        (customer, cb) => {
+          QBClassModel.findOne({
+            where: {
+              fully_qualified_name: `${series_number}`
+            }
+          }).then((cls) => {
+            if(!cls) {
+              return cb({err: `no qb class found for series_number: ${series_number}`})
+            }
+            cb(undefined, customer, cls)
           })
         },
         (customer, cls, cb) => {
@@ -292,9 +309,15 @@ module.exports = function(
     const product_type = params.product_type.toUpperCase()
     const series_name = params.series_name
     const qbAccountKey = 'flexfunds'
-    const qbConfig = Configs.quickbooks[qbAccountKey]
+    let qbConfig
     return new Promise((resolve, reject) => {
       async.waterfall([
+        (cb) => {
+          that.getAPIConfigs(qbAccountKey).then((_qbConfig) => {
+            qbConfig = _qbConfig
+            cb()
+          })
+        },
         (cb) => {
           that.getQBCustomer(customer_name, qbConfig.account).then((customer) => {
             if(!customer) {
@@ -581,7 +604,7 @@ module.exports = function(
           })
         },
         (cb) => {
-          const seriesName = `Series ${seriesNumber}`
+          const seriesName = `${seriesNumber}`
           QBClassModel.findOne({
             where: {
               fully_qualified_name: seriesName,
@@ -816,7 +839,7 @@ module.exports = function(
           })
         },
         (cb) => {
-          const seriesName = `Series ${seriesNumber}`
+          const seriesName = `${seriesNumber}`
           QBClassModel.findOne({
             where: {
               fully_qualified_name: seriesName,
