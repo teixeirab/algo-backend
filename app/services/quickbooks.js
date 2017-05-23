@@ -133,7 +133,7 @@ module.exports = function(
           })
           if (_.get(Configs, 'quickbooks.debugInvoiceSend')) {
             console.log(JSON.stringify(params, undefined, 2))
-            return reject({err: 'in invoice send debug mode'})
+            return reject({err: 'in invoice send debug mode', testData: params})
           }
           qbo.createInvoice(params.invoice, (err, result) => {
             if(err) {
