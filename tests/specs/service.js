@@ -493,21 +493,22 @@ describe('service tests', function() {
           ], () => {
             let count = 0
             let from = new Date(2017, 0, 1), to = new Date(2017, 1, 1)
+            let cashRoundUp = 100
+            let interestData = [{
+              "Series Number": "1",
+              "Previous Payment Date": from,
+              "Loan Payment Date": to,
+              "Nominal Basis": 10000,
+              "Interest Rate": 0.1,
+              "Interest Repayment": 10000,
+              "Interest Income": 10000,
+              "Principal Repayment": 0,
+              "Cash Round Up": cashRoundUp,
+              "Invoice Sent": "No"
+            }]
             sinon.stub(vars['SqlService'], 'viewData').callsFake(function (params) {
-              let interestView = [{
-                "Series Number": "1",
-                "Previous Payment Date": from,
-                "Loan Payment Date": to,
-                "Nominal Basis": 10000,
-                "Interest Rate": 0.1,
-                "Interest Repayment": 10000,
-                "Interest Income": 10000,
-                "Principal Repayment": 0,
-                "Cash Round Up": 100,
-                "Invoice Sent": "No"
-              }]
               return new Promise((resolve, reject) => {
-                resolve(interestView)
+                resolve(interestData)
               })
             });
             count = 0
@@ -558,7 +559,7 @@ describe('service tests', function() {
                       }
                     },
                     {
-                      "Amount": 100/2,
+                      "Amount": cashRoundUp/20,
                       "DetailType": "SalesItemLineDetail",
                       "Description": "test",
                       "SalesItemLineDetail": {
@@ -593,9 +594,12 @@ describe('service tests', function() {
                 resolve()
               })
             })
+            let interestParams = _.clone(interestData[0])
+            interestParams['Cash Round Up'] = cashRoundUp/10
             request(app)
               .post('/api/panel/qb/interest-invoice/' + seriesNumber)
               .set('x-apikey', '123')
+              .send(interestParams)
               .end((err, res) => {
                 vars['AdvancesInterestScheduleModel'].findAll().then((schedules) => {
                   assert.equal(3, schedules.length)

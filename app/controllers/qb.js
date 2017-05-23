@@ -103,7 +103,22 @@ module.exports = function(Configs, QuickBookService, SqlService) {
       if(!results || !results.length) {
         return res.status(403).send()
       }
-      QuickBookService.createInterestInvoice(results[0]).then(() => {
+      let interestData = results[0]
+      Object.keys(req.body).forEach((key) => {
+        let validParam = [
+          'Nominal Basis',
+          'Interest Rate',
+          'Interest Repayment',
+          'Interest Income',
+          'Principal Repayment',
+          'Cash Round Up'
+        ].indexOf(key) >= 0
+        if(!validParam) {
+          return
+        }
+        interestData[key] = req.body[key]
+      })
+      QuickBookService.createInterestInvoice(interestData).then(() => {
         res.status(200).send()
       })
     })
