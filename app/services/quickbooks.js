@@ -268,7 +268,7 @@ module.exports = function(
                   DefinitionId: customFields['For'][qbConfig.name].DefinitionId,
                   Name: 'For',
                   Type: 'StringType',
-                  StringValue: `S${series_number} Legal Fees - ${type}`
+                  StringValue: `S${series_number} Legal Fees - ` + (type.indexOf('Amendment') >= 0 ? 'Amendment' : 'Tranche')
                 }]
               }
               cb(undefined, invoice, items[0].item_currency)
