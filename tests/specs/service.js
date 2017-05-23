@@ -614,6 +614,105 @@ describe('service tests', function() {
               })
           })
         });
+        it('generate legal invoice', function (done) {
+          const seriesNumber = 1, from = '2016-01-01', to = '2016-12-31', issuer_qb_account = 'kata.choi@gmail.com', flex_qb_account = 'katat.choi@gmail.com'
+          helper.batchCreateInstances([
+            ['QBClassModel', [
+              {
+                id: "5000000000000027882",
+                qb_account: flex_qb_account,
+                name: 'Series',
+                fully_qualified_name: 'Series'
+              }
+            ]],
+            ['QBItemModel', [
+              {id: 1, name: 'legal doc', qb_account: flex_qb_account, description: 'legal doc'},
+              {id: 2, name: 'Tranche Set-up', qb_account: flex_qb_account, description: 'Tranche Set-up'},
+            ]],
+            ['QBCustomerModel', [
+              {id: 1, qb_account: flex_qb_account, fully_qualified_name: 'test', display_name: 'test', currency_code: 'USD', email: flex_qb_account},
+            ]],
+            ['SeriesProductInformationModel', [
+              {series_number: seriesNumber, client_name: 'test1', bloomberg_name: '', product_type: 'Fund', issue_date: new Date(), maturity_date: new Date(), region: '', nav_frequency: '', currency: ''}
+            ]],
+            ['SeriesNamesModel', [
+              {series_number: seriesNumber, series_name: 'test series', common_code: '1', isin: '1'}
+            ]],
+            ['QBInvoiceTypeItemModel', [
+              {invoice_type: 'Amendment: EUR 3500', qb_account: flex_qb_account, item_id: 1, item_amount: 100, item_currency: 'EUR'}
+            ]],
+            ['QBAPIAccountModel', [
+              {name: 'flexfunds', account: flex_qb_account, token_expires_date: new Date(), consumer_key: 'qyprdmo0k4zNWYg02AAuGfqaoC1m', consumer_secret: 'vY0ivLWoS88RwfZzjTSbVs661O1rtcNMIB8Q8dH', token: 'qyprdd2brFdkST5neF228WkeabLldEPBkPfusLrQQjAQmy', token_secret: '06EtkSduVSqaWRvVLLQkLQcSZjFTa7ZS7hXxET4I', realm_id: '123145808149854', use_sandbox: true, debug: false}
+            ]],
+            ['UsersModel', [
+              {user_type: 'Trading', first_name: '1', last_name: '1', cell_phone: '1', email: '1', password: '1', apikey: '123', status: 'A', use_sandbox: true, debug: false}
+            ]]
+          ], () => {
+            let count = 0
+            sinon.stub(vars['QuickBookService'], 'createInvoice').callsFake(function (params) {
+              let expectedInvoice = {
+                "Line": [
+                  {
+                    "DetailType": "DescriptionOnly",
+                    "Description": "Legal Fees for FlexETP Series - 1"
+                  },
+                  {
+                    "Amount": "100",
+                    "DetailType": "SalesItemLineDetail",
+                    "Description": "legal doc",
+                    "SalesItemLineDetail": {
+                      "ItemRef": {
+                        "value": "1"
+                      },
+                      "ClassRef": {
+                        "value": "5000000000000027882"
+                      },
+                      "Qty": 1
+                    }
+                  }
+                ],
+                "CustomerRef": {
+                  "value": 1
+                },
+                "CurrencyRef": {
+                  "value": "USD"
+                },
+                "BillEmail": {
+                  "Address": "katat.choi@gmail.com"
+                },
+                "PrivateNote": `S${seriesNumber} Amendment: EUR 3500`,
+                "EmailStatus": "NeedToSend",
+                "CustomerMemo": "Make checks payable in USD to: \n Bank: Bank of America \nAccount Name: FlexFunds ETP LLC \nAccount Number: 898067231257 \nRouting (wires): 026009593 SWIFT: BOFAUS3N \n(for all other currencies, please use BOFAUS6S) \nAddress: 495 Brickell Avenue. Miami, FL 33131 \n\nIf you have any questions concerning this invoice, \ncontact us at accounting@flexfundsetp.com"
+              }
+
+              assert.equal(JSON.stringify(expectedInvoice), JSON.stringify(params.invoice))
+              return new Promise((resolve, reject) => {
+                resolve()
+              })
+            });
+            request(app)
+              .post('/api/panel/qb/legal-invoice')
+              .set('x-apikey', '123')
+              .send({
+                client_name: 'test',
+                type: 'Amendment: EUR 3500',
+                series_number: seriesNumber
+              })
+              .end((err, res) => {
+                console.log(res.body)
+                done()
+                // assert.equal(2, count)
+                // vars['QBInvoicesMaintenanceModel'].findAll().then((invs) => {
+                //   assert.equal(2, invs.length)
+                //   assert.equal(1, invs[0].series_number)
+                //   assert(invs[0].invoice_sent_date)
+                //   assert.equal(2, invs[1].series_number)
+                //   assert(!invs[1].invoice_sent_date)
+                //   done()
+                // })
+              })
+          })
+        });
       });
       describe('customer', function () {
         it('create customer', function (done) {

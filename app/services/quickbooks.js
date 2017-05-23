@@ -173,7 +173,7 @@ module.exports = function(
 
 
   this.generateLegalInvoice = function(params){
-    const customer_name = params.customer_name;
+    const customer_name = params.client_name;
     const series_number = params.series_number;
     const type = params.type;
     const qbAccountKey = 'flexfunds';
@@ -197,7 +197,7 @@ module.exports = function(
         (customer, cb) => {
           QBClassModel.findOne({
             where: {
-              fully_qualified_name: `${series_number}`
+              fully_qualified_name: `Series`
             }
           }).then((cls) => {
             if(!cls) {
@@ -253,30 +253,15 @@ module.exports = function(
                 CustomerRef: {
                   value: customer.id
                 },
-                //when this field is null, it defaults to customer's currency_code
-                //but when it is different from customer's currency_code it throws error:
-                //====Business Validation Error: The currency of the transaction is invalid for customer/vendor/account.====
-                //so setting this field seems not necessary so far.
                 CurrencyRef: {
                   value: customer.currency_code
                 },
                 BillEmail: {
                   Address: customer.email
                 },
+                PrivateNote: `S${series_number} ${type}`,
                 EmailStatus: 'NeedToSend',
-                CustomerMemo: {
-                  value: "Make checks payable in USD to: \n " +
-                  "Bank: Bank of America \n" +
-                  "Account Name: FlexFunds ETP LLC \n" +
-                  "Account Number: 898067231257 \n" +
-                  "Routing (wires): 026009593 SWIFT: BOFAUS3N \n" +
-                  "(for all other currencies, please use BOFAUS6S) \n" +
-                  "Address: 495 Brickell Avenue. Miami, FL 33131 \n" +
-                  "\n" +
-                  "If you have any questions concerning this invoice, \n" +
-                  "contact us at accounting@flexfundsetp.com"
-                }
-                // DocNumber: null
+                CustomerMemo: customerMemo
               }
               cb(undefined, invoice, items[0].item_currency)
             })

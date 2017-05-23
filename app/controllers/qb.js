@@ -39,9 +39,9 @@ module.exports = function(Configs, QuickBookService, SqlService) {
 
   this.generateLegalInvoice = function(req, res) {
     req.checkBody({
-      customer_name: {
+      client_name: {
         notEmpty: true,
-        errorMessage: 'Invalid customer_name'
+        errorMessage: 'Invalid client_name'
       },
       type: {
         matches: {
