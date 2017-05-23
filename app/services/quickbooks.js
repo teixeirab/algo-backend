@@ -708,8 +708,7 @@ module.exports = function(
           }).catch(cb)
         },
         (invoice, cb) => {
-          if (clientName === 'IA Capital Structures (Ireland) PLC.') {
-            // clientName = 'IA Capital Structures (Ireland) PLC USD'
+          if (process.NODE_ENV !== 'prod') {
             clientName = 'test'
           }
           QBCustomerModel.findOne({
