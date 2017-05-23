@@ -689,7 +689,7 @@ describe('service tests', function() {
                   DefinitionId: '2',
                   Name: 'For',
                   Type: 'StringType',
-                  StringValue: `S1 Legal Fees - Amendment: EUR 3500`
+                  StringValue: `S1 Legal Fees - Amendment`
                 }]
               }
 
