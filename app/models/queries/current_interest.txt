@@ -7,7 +7,8 @@ simple_interest_rate as 'Interest Rate',
 simple_interest_repayment + compounded_interest_repayment as 'Interest Repayment',
 simple_interest_income as 'Interest Income',
 principal_repayment as 'Principal Repayment',
-floor(((simple_interest_repayment + compounded_interest_repayment + simple_interest_income + principal_repayment)/ (nominal_outstanding/1000))*100) / 100 as 'Cash Round Up',
+0 as 'Cash Round Up',
+-- floor(((simple_interest_repayment + compounded_interest_repayment + simple_interest_income + principal_repayment)/ (nominal_outstanding/1000))*100) / 100 as 'Cash Round Up',
 invoice_sent as 'Invoice Sent'
 from (
 

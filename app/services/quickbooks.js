@@ -36,6 +36,27 @@ module.exports = function(
                         "If you have any questions concerning this invoice, \n" +
                         "contact us at accounting@flexfundsetp.com"
 
+  const customerMemoIAC = "For payments in USD, please use the following account: \n " +
+                          "Bank: Citibank, New York \n " +
+                          "Name: IA Capital Structures (Ireland) Plc \n " +
+                          "Account Number: 30983191 \n " +
+                          "IBAN/ABA: 021000089 \n " +
+                          "SWIFT code: CITIUS33 \n " +
+                          "\n " +
+                          "For payments in EUR, please use: \n " +
+                          "Bank: Citibank N.A., London \n " +
+                          "Name: IA Capital Structures (Ireland) Plc \n " +
+                          "Account Number: 17709722 \n " +
+                          "IBAN: GB31CITI18500817709722 \n " +
+                          "SWIFT Code: CITIGB2L \n " +
+                          "If you have any questions concerning this invoice, \n" +
+                          "contact us at accounting@flexfundsetp.com"
+
+
+
+
+
+
   const customFields = {
     'For': {
       'issuer_1': {
@@ -925,7 +946,7 @@ module.exports = function(
               },
               EmailStatus: 'NeedToSend',
               CustomerMemo: {
-                value:  customerMemo
+                value:  customerMemoIAC
               }
             })
             cb(undefined, invoice)
