@@ -16,6 +16,8 @@ describe('service tests', function() {
     'TheoremBalanceSheetModel',
     'SeriesProductInformationModel',
     'SeriesAgentInformationModel',
+    'BorrowersModel',
+    'AdvancesInterestScheduleModel',
     'QBCustomerModel',
     'QBInvoiceModel',
     'QBClassModel',
@@ -278,8 +280,8 @@ describe('service tests', function() {
               {
                 id: "5000000000000027881",
                 qb_account: issuer_qb_account,
-                name: 'Series 1',
-                fully_qualified_name: 'Series 1'
+                name: '1',
+                fully_qualified_name: '1'
               },{
                 id: "5000000000000027882",
                 qb_account: flex_qb_account,
@@ -382,42 +384,42 @@ describe('service tests', function() {
                 }
                 assert.equal(JSON.stringify(expectedInvoice), JSON.stringify(params.invoice))
               }
-              if (count === 2) {
-                assert.equal('flexfunds', params.qb_account_key)
-                let expectedInvoice = {
-                  "Line":[{
-                    "DetailType":"DescriptionOnly",
-                    "Description":"For Series Name 1 from January 1st to December 31st"
-                  },{
-                    "Amount":50,
-                    "DetailType":"SalesItemLineDetail",
-                    "Description":"item test desc",
-                    "SalesItemLineDetail":{
-                      "ItemRef":{"value":3},"Qty":1,"ClassRef":{"value":"5000000000000027882"}
-                    }
-                  }],
-                  "CustomerRef":{
-                    "value":2
-                  },
-                  "CurrencyRef":{
-                    "value":"USD"
-                  },
-                  "BillEmail":{
-                    "Address":"katat.choi@gmail.com"
-                  },
-                  "EmailStatus":"NeedToSend",
-                  "CustomerMemo":{
-                    "value":"Make checks payable in USD to: \n Bank: Bank of America \nAccount Name: FlexFunds ETP LLC \nAccount Number: 898067231257 \nRouting (wires): 026009593 SWIFT: BOFAUS3N \n(for all other currencies, please use BOFAUS6S) \nAddress: 495 Brickell Avenue. Miami, FL 33131 \n\nIf you have any questions concerning this invoice, \ncontact us at accounting@flexfundsetp.com"
-                  },
-                  "CustomField":[{
-                    "DefinitionId":"2",
-                    "Name":"For",
-                    "Type":"StringType",
-                    "StringValue":"S1 - 01/01/2016 - 31/12/2016"
-                  }]
-                }
-                assert.deepEqual(expectedInvoice, params.invoice)
-              }
+              // if (count === 2) {
+              //   assert.equal('flexfunds', params.qb_account_key)
+              //   let expectedInvoice = {
+              //     "Line":[{
+              //       "DetailType":"DescriptionOnly",
+              //       "Description":"For Series Name 1 from January 1st to December 31st"
+              //     },{
+              //       "Amount":50,
+              //       "DetailType":"SalesItemLineDetail",
+              //       "Description":"item test desc",
+              //       "SalesItemLineDetail":{
+              //         "ItemRef":{"value":3},"Qty":1,"ClassRef":{"value":"5000000000000027882"}
+              //       }
+              //     }],
+              //     "CustomerRef":{
+              //       "value":2
+              //     },
+              //     "CurrencyRef":{
+              //       "value":"USD"
+              //     },
+              //     "BillEmail":{
+              //       "Address":"katat.choi@gmail.com"
+              //     },
+              //     "EmailStatus":"NeedToSend",
+              //     "CustomerMemo":{
+              //       "value":"Make checks payable in USD to: \n Bank: Bank of America \nAccount Name: FlexFunds ETP LLC \nAccount Number: 898067231257 \nRouting (wires): 026009593 SWIFT: BOFAUS3N \n(for all other currencies, please use BOFAUS6S) \nAddress: 495 Brickell Avenue. Miami, FL 33131 \n\nIf you have any questions concerning this invoice, \ncontact us at accounting@flexfundsetp.com"
+              //     },
+              //     "CustomField":[{
+              //       "DefinitionId":"2",
+              //       "Name":"For",
+              //       "Type":"StringType",
+              //       "StringValue":"S1 - 01/01/2016 - 31/12/2016"
+              //     }]
+              //   }
+              //   assert.deepEqual(expectedInvoice, params.invoice)
+              // }
               return new Promise((resolve, reject) => {
                 resolve()
               })
@@ -430,7 +432,7 @@ describe('service tests', function() {
                 to: to
               })
               .end((err, res) => {
-                assert.equal(2, count)
+                assert.equal(1, count)
                 vars['QBInvoicesMaintenanceModel'].findAll().then((invs) => {
                   assert.equal(2, invs.length)
                   assert.equal(1, invs[0].series_number)
@@ -449,8 +451,8 @@ describe('service tests', function() {
               {
                 id: "5000000000000027881",
                 qb_account: issuer_qb_account,
-                name: 'Series 1',
-                fully_qualified_name: 'Series 1'
+                name: '1',
+                fully_qualified_name: '1'
               }
             ]],
             ['SeriesAgentInformationModel', [
@@ -465,52 +467,71 @@ describe('service tests', function() {
               {id: 3, name: 'Cash Round Up', qb_account: issuer_qb_account, description: 'test'}
             ]],
             ['QBCustomerModel', [
-              {id: 2, qb_account: issuer_qb_account, fully_qualified_name: '0.9035172225072845', display_name: 'IA Capital Structures (Ireland) PLC.', currency_code: 'USD', email: issuer_qb_account}
+              {id: 2, qb_account: issuer_qb_account, fully_qualified_name: '0.9035172225072845', display_name: 'IA Capital Structures (Ireland) PLC.', currency_code: 'USD', email: issuer_qb_account},
+              {id: 1, qb_account: issuer_qb_account, fully_qualified_name: 'test1', display_name: 'IA Capital Structures (Ireland) PLC.', currency_code: 'USD', email: issuer_qb_account},
+              {id: 3, qb_account: issuer_qb_account, fully_qualified_name: 'test2', display_name: 'IA Capital Structures (Ireland) PLC.', currency_code: 'USD', email: issuer_qb_account}
             ]],
             ['SeriesProductInformationModel', [
-              {series_number: seriesNumber, client_name: '0.9035172225072845', bloomberg_name: '', product_type: 'Fund', issue_date: new Date(), maturity_date: new Date(), region: '', nav_frequency: '', currency: ''}
+              {series_number: seriesNumber, client_name: 'test1', bloomberg_name: '', product_type: 'Fund', issue_date: new Date(), maturity_date: new Date(), region: '', nav_frequency: '', currency: ''}
+            ]],
+            ['AdvancesInterestScheduleModel', [
+              {id: 1, series_number: seriesNumber, loan_payment_date: new Date(2017, 1, 1), interest_determination_date: new Date(2017, 2, 1), series_interest_payment_date: new Date(2017, 2, 1), previous_payment_date: new Date(2016, 0, 1), invoice_sent: 'No'},
+              {id: 2, series_number: seriesNumber, loan_payment_date: new Date(2017, 1, 1), interest_determination_date: new Date(2017, 2, 1), series_interest_payment_date: new Date(2017, 2, 1), previous_payment_date: new Date(2017, 0, 1), invoice_sent: 'No'},
+              {id: 3, series_number: 2, loan_payment_date: new Date(2017, 1, 1), interest_determination_date: new Date(2017, 2, 1), series_interest_payment_date: new Date(2017, 2, 1), previous_payment_date: new Date(2017, 0, 1), invoice_sent: 'No'}
+            ]],
+            ['BorrowersModel', [
+              {id: 1, client_name: 'test1', series_number: seriesNumber, contact_name: '1', percent_outstanding: 0.5},
+              {id: 2, client_name: 'test2', series_number: seriesNumber, contact_name: '1', percent_outstanding: 0.5},
+              {id: 3, client_name: 'test', series_number: 2, contact_name: '1', percent_outstanding: 0.5},
             ]],
             ['QBAPIAccountModel', [
               {name: 'issuer_1', account: issuer_qb_account, token_expires_date: new Date(), consumer_key: 'qyprdmo0k4zNWYg02AAuGfqaoC1mAr', consumer_secret: 'vY0ivLWoS88RwfZzjTSbVs661O1rtcNMIB8Q8dHq', token: 'qyprdd2brFdkST5neF228WkeabLldEPBkPfusLrQQjAQmyx0', token_secret: '06EtkSduVSqaWRvVLLQkLQcSZjFTa7ZS7hXxET4I', realm_id: '123145808149854', use_sandbox: true, debug: false}
+            ]],
+            ['UsersModel', [
+              {user_type: 'Trading', first_name: '1', last_name: '1', cell_phone: '1', email: '1', password: '1', apikey: '123', status: 'A', use_sandbox: true, debug: false}
             ]]
           ], () => {
             let count = 0
+            let from = new Date(2017, 0, 1), to = new Date(2017, 1, 1)
+            let cashRoundUp = 100
+            let interestData = [{
+              "Series Number": "1",
+              "Previous Payment Date": from,
+              "Loan Payment Date": to,
+              "Nominal Basis": 10000,
+              "Interest Rate": 0.1,
+              "Interest Repayment": 10000,
+              "Interest Income": 10000,
+              "Principal Repayment": 0,
+              "Cash Round Up": cashRoundUp,
+              "Invoice Sent": "No"
+            }]
             sinon.stub(vars['SqlService'], 'viewData').callsFake(function (params) {
-              let interestView = [{
-                "Series Number": "1",
-                "Previous Payment Date": "2016-12-31T05:00:00.000Z",
-                "Loan Payment Date": "2017-06-30T05:00:00.000Z",
-                "Nominal Basis": 1083000,
-                "Interest Rate": 0.07,
-                "Interest Repayment": 12567.55,
-                "Interest Income": 37593.45,
-                "Principal Repayment": 0,
-                "Cash Round Up": 46.31,
-                "Invoice Sent": "No"
-              }]
               return new Promise((resolve, reject) => {
-                resolve(interestView)
+                resolve(interestData)
               })
             });
+            count = 0
             sinon.stub(vars['QuickBookService'], 'createInvoice').callsFake(function (params) {
+              count++
               let expectedParams = {
                 "qb_account_key": "issuer_1",
                 "invoice": {
                   "Line": [
                     {
                       "DetailType": "DescriptionOnly",
-                      "Description": "Interest Notification - Period 31/12/2016 - 30/06/2017"
+                      "Description": `Interest Notification - Period ${moment(from).format('DD/MM/YYYY')} - ${moment(to).format('DD/MM/YYYY')}`
                     },
                     {
                       "DetailType": "DescriptionOnly",
-                      "Description": "Interest Rate - 7.00%"
+                      "Description": "Interest Rate - 5.00%"
                     },
                     {
                       "DetailType": "DescriptionOnly",
-                      "Description": "Nominal Basis - $1,083,000.00"
+                      "Description": "Nominal Basis - $5,000.00"
                     },
                     {
-                      "Amount": 37593.45,
+                      "Amount": 10000/2,
                       "DetailType": "SalesItemLineDetail",
                       "Description": "item test desc",
                       "SalesItemLineDetail": {
@@ -524,7 +545,7 @@ describe('service tests', function() {
                       }
                     },
                     {
-                      "Amount": 12567.55,
+                      "Amount": 10000/2,
                       "DetailType": "SalesItemLineDetail",
                       "Description": "item test desc",
                       "SalesItemLineDetail": {
@@ -538,7 +559,7 @@ describe('service tests', function() {
                       }
                     },
                     {
-                      "Amount": 46.31,
+                      "Amount": cashRoundUp/20,
                       "DetailType": "SalesItemLineDetail",
                       "Description": "test",
                       "SalesItemLineDetail": {
@@ -553,7 +574,7 @@ describe('service tests', function() {
                     }
                   ],
                   "CustomerRef": {
-                    "value": 2
+                    "value": count === 1 ? 1: 3
                   },
                   "CurrencyRef": {
                     "value": "USD"
@@ -573,11 +594,119 @@ describe('service tests', function() {
                 resolve()
               })
             })
+            let interestParams = _.clone(interestData[0])
+            interestParams['Cash Round Up'] = cashRoundUp/10
             request(app)
               .post('/api/panel/qb/interest-invoice/' + seriesNumber)
-              .set('internal-key', '123')
+              .set('x-apikey', '123')
+              .send(interestParams)
               .end((err, res) => {
-                console.log(res.body)
+                vars['AdvancesInterestScheduleModel'].findAll().then((schedules) => {
+                  assert.equal(3, schedules.length)
+                  assert.equal('No', schedules[0].invoice_sent)
+                  assert.equal('No', schedules[2].invoice_sent)
+                  assert.equal('Yes', schedules[1].invoice_sent)
+                  assert.equal(formatDate(to), formatDate(schedules[1].loan_payment_date))
+                  assert.equal(formatDate(from), formatDate(schedules[1].previous_payment_date))
+                  assert.equal(seriesNumber, schedules[1].series_number)
+                  done()
+                })
+              })
+          })
+        });
+        it('generate legal invoice', function (done) {
+          const seriesNumber = 1, from = '2016-01-01', to = '2016-12-31', issuer_qb_account = 'kata.choi@gmail.com', flex_qb_account = 'katat.choi@gmail.com'
+          helper.batchCreateInstances([
+            ['QBClassModel', [
+              {
+                id: "5000000000000027882",
+                qb_account: flex_qb_account,
+                name: 'Series',
+                fully_qualified_name: 'Series'
+              }
+            ]],
+            ['QBItemModel', [
+              {id: 1, name: 'legal doc', qb_account: flex_qb_account, description: 'legal doc'},
+              {id: 2, name: 'Tranche Set-up', qb_account: flex_qb_account, description: 'Tranche Set-up'},
+            ]],
+            ['QBCustomerModel', [
+              {id: 1, qb_account: flex_qb_account, fully_qualified_name: 'test', display_name: 'test', currency_code: 'USD', email: flex_qb_account},
+            ]],
+            ['SeriesProductInformationModel', [
+              {series_number: seriesNumber, client_name: 'test1', bloomberg_name: '', product_type: 'Fund', issue_date: new Date(), maturity_date: new Date(), region: '', nav_frequency: '', currency: ''}
+            ]],
+            ['SeriesNamesModel', [
+              {series_number: seriesNumber, series_name: 'test series', common_code: '1', isin: '1'}
+            ]],
+            ['QBInvoiceTypeItemModel', [
+              {invoice_type: 'Amendment: EUR 3500', qb_account: flex_qb_account, item_id: 1, item_amount: 100, item_currency: 'EUR'}
+            ]],
+            ['QBAPIAccountModel', [
+              {name: 'flexfunds', account: flex_qb_account, token_expires_date: new Date(), consumer_key: 'qyprdmo0k4zNWYg02AAuGfqaoC1m', consumer_secret: 'vY0ivLWoS88RwfZzjTSbVs661O1rtcNMIB8Q8dH', token: 'qyprdd2brFdkST5neF228WkeabLldEPBkPfusLrQQjAQmy', token_secret: '06EtkSduVSqaWRvVLLQkLQcSZjFTa7ZS7hXxET4I', realm_id: '123145808149854', use_sandbox: true, debug: false}
+            ]],
+            ['UsersModel', [
+              {user_type: 'Trading', first_name: '1', last_name: '1', cell_phone: '1', email: '1', password: '1', apikey: '123', status: 'A', use_sandbox: true, debug: false}
+            ]]
+          ], () => {
+            let count = 0
+            sinon.stub(vars['QuickBookService'], 'createInvoice').callsFake(function (params) {
+              let expectedInvoice = {
+                "Line": [
+                  {
+                    "DetailType": "DescriptionOnly",
+                    "Description": "Legal Fees for FlexETP Series - 1"
+                  },
+                  {
+                    "Amount": "100",
+                    "DetailType": "SalesItemLineDetail",
+                    "Description": "legal doc",
+                    "SalesItemLineDetail": {
+                      "ItemRef": {
+                        "value": "1"
+                      },
+                      "ClassRef": {
+                        "value": "5000000000000027882"
+                      },
+                      "Qty": 1
+                    }
+                  }
+                ],
+                "CustomerRef": {
+                  "value": 1
+                },
+                "CurrencyRef": {
+                  "value": "USD"
+                },
+                "BillEmail": {
+                  "Address": "katat.choi@gmail.com"
+                },
+                "PrivateNote": `S${seriesNumber} Amendment: EUR 3500`,
+                "EmailStatus": "NeedToSend",
+                "CustomerMemo": {
+                  value: "Make checks payable in USD to: \n Bank: Bank of America \nAccount Name: FlexFunds ETP LLC \nAccount Number: 898067231257 \nRouting (wires): 026009593 SWIFT: BOFAUS3N \n(for all other currencies, please use BOFAUS6S) \nAddress: 495 Brickell Avenue. Miami, FL 33131 \n\nIf you have any questions concerning this invoice, \ncontact us at accounting@flexfundsetp.com"
+                },
+                CustomField: [{
+                  DefinitionId: '2',
+                  Name: 'For',
+                  Type: 'StringType',
+                  StringValue: `S1 Legal Fees - Amendment`
+                }]
+              }
+
+              assert.equal(JSON.stringify(expectedInvoice), JSON.stringify(params.invoice))
+              return new Promise((resolve, reject) => {
+                resolve()
+              })
+            });
+            request(app)
+              .post('/api/panel/qb/legal-invoice')
+              .set('x-apikey', '123')
+              .send({
+                client_name: 'test',
+                type: 'Amendment: EUR 3500',
+                series_number: seriesNumber
+              })
+              .end((err, res) => {
                 done()
               })
           })

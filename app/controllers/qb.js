@@ -39,19 +39,19 @@ module.exports = function(Configs, QuickBookService, SqlService) {
 
   this.generateLegalInvoice = function(req, res) {
     req.checkBody({
-      customer_name: {
+      client_name: {
         notEmpty: true,
-        errorMessage: 'Invalid customer_name'
+        errorMessage: 'Invalid client_name'
       },
       type: {
         matches: {
-          options: [/'Amendment: EUR 3500', 'Amendment: EUR 7000', 'Tranche: EUR 500', 'Pre-Issuance Amendment: EUR 1000', 'Pre-Issuance Amendment: EUR 500'/i]
+          options: [/Amendment: EUR 3500|Amendment: EUR 7000|Tranche: EUR 500|Pre-Issuance Amendment: EUR 1000|Pre-Issuance Amendment: EUR 500/i]
         },
-        errorMessage: 'Invalid fee type'
+        errorMessage: 'Invalid type'
       },
-      series_name: {
+      series_number: {
         notEmpty: true,
-        errorMessage: 'Require series_name'
+        errorMessage: 'Require series_number'
       }
     })
     req.getValidationResult().then(function(result) {
@@ -103,8 +103,25 @@ module.exports = function(Configs, QuickBookService, SqlService) {
       if(!results || !results.length) {
         return res.status(403).send()
       }
-      QuickBookService.createInterestInvoice(results[0]).then(() => {
+      let interestData = results[0]
+      Object.keys(req.body).forEach((key) => {
+        let validParam = [
+          'Nominal Basis',
+          'Interest Rate',
+          'Interest Repayment',
+          'Interest Income',
+          'Principal Repayment',
+          'Cash Round Up'
+        ].indexOf(key) >= 0
+        if(!validParam) {
+          return
+        }
+        interestData[key] = req.body[key]
+      })
+      QuickBookService.createInterestInvoice(interestData).then(() => {
         res.status(200).send()
+      }).catch((err) => {
+        res.status(403).send(err)
       })
     })
   }

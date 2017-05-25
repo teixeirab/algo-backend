@@ -12,6 +12,8 @@ module.exports = function(
   SeriesProductInformationModel,
   SeriesAgentInformationModel,
   SeriesNamesModel,
+  AdvancesInterestScheduleModel,
+  BorrowersModel,
   QBAccountIssuerModel,
   QBCustomerModel,
   QBClassModel,
@@ -101,6 +103,23 @@ module.exports = function(
     })
   }
 
+  this.getQBCustomer = function(clientName, account) {
+    if(!_.get(Configs, 'quickbooks.useRealClientAccount')) {
+      clientName = 'test'
+    }
+
+    return QBCustomerModel.findOne({
+      where: {
+        qb_account: account,
+        $or: [{
+          fully_qualified_name: clientName
+        }, {
+          display_name: clientName
+        }]
+      }
+    })
+  }
+
   this.createInvoice = function(params) {
     const qbAccountKey = params.qb_account_key
     const fromCurrency = params.from_currency
@@ -112,8 +131,10 @@ module.exports = function(
           params.invoice.Line.forEach((line) => {
             line.Amount *= rate
           })
-          // console.log(JSON.stringify(params, undefined, 2))
-          // return resolve()
+          if (_.get(Configs, 'quickbooks.debugInvoiceSend')) {
+            console.log(JSON.stringify(params, undefined, 2))
+            return reject({err: 'in invoice send debug mode', testData: params})
+          }
           qbo.createInvoice(params.invoice, (err, result) => {
             if(err) {
               return reject(err)
@@ -152,25 +173,37 @@ module.exports = function(
 
 
   this.generateLegalInvoice = function(params){
-    const customer_name = params.customer_name;
+    const customer_name = params.client_name;
     const series_number = params.series_number;
     const type = params.type;
     const qbAccountKey = 'flexfunds';
-    const qbConfig = Configs.quickbooks[qbAccountKey];
-    const className = 'Series';
+    let qbConfig
     return new Promise((resolve, reject) => {
       async.waterfall([
         (cb) => {
-          QBCustomerModel.findOne({
-            where: {
-              qb_account: qbConfig.account,
-              display_name: customer_name
-            }
-          }).then((customer) => {
+          that.getAPIConfigs(qbAccountKey).then((_qbConfig) => {
+            qbConfig = _qbConfig
+            cb()
+          })
+        },
+        (cb) => {
+          that.getQBCustomer(customer_name, qbConfig.account).then((customer) => {
             if(!customer) {
               return cb({err: `customer ${customer_name} not found`})
             }
             cb(undefined, customer)
+          })
+        },
+        (customer, cb) => {
+          QBClassModel.findOne({
+            where: {
+              fully_qualified_name: `Series`
+            }
+          }).then((cls) => {
+            if(!cls) {
+              return cb({err: `no qb class found for series_number: ${series_number}`})
+            }
+            cb(undefined, customer, cls)
           })
         },
         (customer, cls, cb) => {
@@ -213,37 +246,30 @@ module.exports = function(
               })
               lines.unshift({
                 DetailType: 'DescriptionOnly',
-                Description: `Setup Fees for FlexETP ${cls.name} - ${series_name}`
+                Description: `Legal Fees for FlexETP ${cls.name} - ${series_number}`
               })
               let invoice = {
                 Line: lines,
                 CustomerRef: {
                   value: customer.id
                 },
-                //when this field is null, it defaults to customer's currency_code
-                //but when it is different from customer's currency_code it throws error:
-                //====Business Validation Error: The currency of the transaction is invalid for customer/vendor/account.====
-                //so setting this field seems not necessary so far.
                 CurrencyRef: {
                   value: customer.currency_code
                 },
                 BillEmail: {
                   Address: customer.email
                 },
+                PrivateNote: `S${series_number} ${type}`,
                 EmailStatus: 'NeedToSend',
                 CustomerMemo: {
-                  value: "Make checks payable in USD to: \n " +
-                  "Bank: Bank of America \n" +
-                  "Account Name: FlexFunds ETP LLC \n" +
-                  "Account Number: 898067231257 \n" +
-                  "Routing (wires): 026009593 SWIFT: BOFAUS3N \n" +
-                  "(for all other currencies, please use BOFAUS6S) \n" +
-                  "Address: 495 Brickell Avenue. Miami, FL 33131 \n" +
-                  "\n" +
-                  "If you have any questions concerning this invoice, \n" +
-                  "contact us at accounting@flexfundsetp.com"
-                }
-                // DocNumber: null
+                  value: customerMemo
+                },
+                CustomField: [{
+                  DefinitionId: customFields['For'][qbConfig.name].DefinitionId,
+                  Name: 'For',
+                  Type: 'StringType',
+                  StringValue: `S${series_number} Legal Fees - ` + (type.indexOf('Amendment') >= 0 ? 'Amendment' : 'Tranche')
+                }]
               }
               cb(undefined, invoice, items[0].item_currency)
             })
@@ -276,16 +302,17 @@ module.exports = function(
     const product_type = params.product_type.toUpperCase()
     const series_name = params.series_name
     const qbAccountKey = 'flexfunds'
-    const qbConfig = Configs.quickbooks[qbAccountKey]
+    let qbConfig
     return new Promise((resolve, reject) => {
       async.waterfall([
         (cb) => {
-          QBCustomerModel.findOne({
-            where: {
-              qb_account: qbConfig.account,
-              display_name: customer_name
-            }
-          }).then((customer) => {
+          that.getAPIConfigs(qbAccountKey).then((_qbConfig) => {
+            qbConfig = _qbConfig
+            cb()
+          })
+        },
+        (cb) => {
+          that.getQBCustomer(customer_name, qbConfig.account).then((customer) => {
             if(!customer) {
               return cb({err: `customer ${customer_name} not found`})
             }
@@ -570,7 +597,7 @@ module.exports = function(
           })
         },
         (cb) => {
-          const seriesName = `Series ${seriesNumber}`
+          const seriesName = `${seriesNumber}`
           QBClassModel.findOne({
             where: {
               fully_qualified_name: seriesName,
@@ -599,12 +626,7 @@ module.exports = function(
             }
           }).then((seriesProductInfo) => {
             const client_name = seriesProductInfo.client_name
-            QBCustomerModel.findOne({
-              where: {
-                fully_qualified_name: client_name,
-                qb_account: qbConfig.account
-              }
-            }).then((customer) => {
+            that.getQBCustomer(client_name, qbConfig.account).then((customer) => {
               _.assign(invoice, {
                 CustomerRef: {
                   value: customer.id
@@ -707,16 +729,7 @@ module.exports = function(
           }).catch(cb)
         },
         (invoice, cb) => {
-          if (clientName === 'IA Capital Structures (Ireland) PLC.') {
-            // clientName = 'IA Capital Structures (Ireland) PLC USD'
-            clientName = 'test'
-          }
-          QBCustomerModel.findOne({
-            where: {
-              fully_qualified_name: clientName,
-              qb_account: qbConfig.account
-            }
-          }).then((customer) => {
+          that.getQBCustomer(clientName, qbConfig.account).then((customer) => {
             if (!customer) {
               return cb({err: `no qb customer found: ${clientName}`})
             }
@@ -786,6 +799,9 @@ module.exports = function(
           }).catch(cb)
         },
         (maintenanceFees, cb) => {
+          if (!Configs.sendFlexMaintenanceInvoice) {
+            return cb(undefined, maintenanceFees)
+          }
           that.createMaintenanceInvoiceFromFlex(maintenanceFees).then(() => {
             cb(undefined, maintenanceFees)
           }).catch(cb)
@@ -805,7 +821,7 @@ module.exports = function(
     })
   }
 
-  this.createInterestInvoice = function(interest) {
+  this.createPartialInterestInvoice = function(interest, clientName, ratio) {
     const seriesNumber = interest['Series Number']
     return new Promise((resolve, reject) => {
       let qbConfig
@@ -819,7 +835,7 @@ module.exports = function(
           })
         },
         (cb) => {
-          const seriesName = `Series ${seriesNumber}`
+          const seriesName = `${seriesNumber}`
           QBClassModel.findOne({
             where: {
               fully_qualified_name: seriesName,
@@ -843,13 +859,13 @@ module.exports = function(
           if (interest['Interest Rate']) {
             lines.push({
               DetailType: 'DescriptionOnly',
-              Description: 'Interest Rate - ' + (interest['Interest Rate'] * 100).toFixed(2) + '%'
+              Description: 'Interest Rate - ' + (interest['Interest Rate'] * 100 * ratio).toFixed(2) + '%'
             })
           }
           if (interest['Nominal Basis']) {
             lines.push({
               DetailType: 'DescriptionOnly',
-              Description: 'Nominal Basis - ' + numeral(interest['Nominal Basis']).format('$0,0.00')
+              Description: 'Nominal Basis - ' + numeral(interest['Nominal Basis'] * ratio).format('$0,0.00')
             })
           }
           async.eachSeries(['Interest Payable', 'Purchased Accrued Interest', 'Cash Round Up'], (itemName, cb) => {
@@ -874,7 +890,7 @@ module.exports = function(
               }
               if (amount) {
                 lines.push({
-                  Amount: amount,
+                  Amount: amount * ratio,
                   DetailType: "SalesItemLineDetail",
                   Description: item.description,
                   SalesItemLineDetail: {
@@ -896,35 +912,23 @@ module.exports = function(
           })
         },
         (invoice, cb) => {
-          SeriesProductInformationModel.findOne({
-            where: {
-              series_number: seriesNumber
-            }
-          }).then((seriesProductInfo) => {
-            const client_name = seriesProductInfo.client_name
-            QBCustomerModel.findOne({
-              where: {
-                fully_qualified_name: client_name,
-                qb_account: qbConfig.account
+          that.getQBCustomer(clientName, qbConfig.account).then((customer) => {
+            _.assign(invoice, {
+              CustomerRef: {
+                value: customer.id
+              },
+              CurrencyRef: {
+                value: customer.currency_code
+              },
+              BillEmail: {
+                Address: customer.email
+              },
+              EmailStatus: 'NeedToSend',
+              CustomerMemo: {
+                value:  customerMemo
               }
-            }).then((customer) => {
-              _.assign(invoice, {
-                CustomerRef: {
-                  value: customer.id
-                },
-                CurrencyRef: {
-                  value: customer.currency_code
-                },
-                BillEmail: {
-                  Address: customer.email
-                },
-                EmailStatus: 'NeedToSend',
-                CustomerMemo: {
-                  value:  customerMemo
-                }
-              })
-              cb(undefined, invoice)
             })
+            cb(undefined, invoice)
           })
         },
         (invoice, cb) => {
@@ -937,12 +941,56 @@ module.exports = function(
           }).catch((err) => {
             cb(err)
           })
+        },
+        (result, cb) => {
+          AdvancesInterestScheduleModel.findOne({
+            where: {
+              series_number: seriesNumber,
+              loan_payment_date: interest['Loan Payment Date'],
+              previous_payment_date: interest['Previous Payment Date']
+            }
+          }).then((schedule) => {
+            if (!schedule) {
+              return cb({err: `not found advances schedule, series_number:${seriesNumber}, loan_payment_date:${interest['Loan Payment Date']}, previous_payment_date:${interest['Prevous Payment Date']}}`})
+            }
+            schedule.invoice_sent = 'Yes'
+            schedule.save().then(() => {
+              cb()
+            })
+          })
         }
       ], (err) => {
         if (err) {
           return reject(err)
         }
         resolve()
+      })
+    })
+  }
+
+  this.createInterestInvoice = function(interest) {
+    const seriesNumber = interest['Series Number']
+    return new Promise((resolve, reject) => {
+      BorrowersModel.findAll({
+        where: {
+          series_number: seriesNumber
+        }
+      }).then((borrowers) => {
+        if (borrowers.length === 0) {
+          return reject({err: `no borrowers found for series_number:${seriesNumber}`})
+        }
+        async.eachSeries(borrowers, (borrower, cb) => {
+          that.createPartialInterestInvoice(interest, borrower.client_name, borrower.percent_outstanding).then(() => {
+            cb()
+          }).catch((err) => {
+            cb(err)
+          })
+        }, (err) => {
+          if (err) {
+            return reject(err)
+          }
+          resolve()
+        })
       })
     })
   }

@@ -7,7 +7,7 @@ module.exports = function(FlexFundsDB, Sequelize) {
       allowNull: true,
       primaryKey: true
     },
-    company_name: {
+    client_name: {
       type: Sequelize.STRING,
       allowNull: false
     },

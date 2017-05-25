@@ -1,0 +1,1 @@
+select client_name as label, percent_outstanding value from borrowers where series_number = {param0};
