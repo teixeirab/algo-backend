@@ -1,1 +1,4 @@
-select distinct(fully_qualified_name) fully_qualified_name from qb_customer where active=1 order by fully_qualified_name asc;
+select distinct(fully_qualified_name) fully_qualified_name
+from qb_customer t1 join qb_account_to_issuer t2 on (t1.qb_account = t2.qb_account)
+where active=1
+and issuer='{param0}' order by fully_qualified_name asc;
