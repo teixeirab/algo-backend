@@ -799,6 +799,9 @@ module.exports = function(
           }).catch(cb)
         },
         (maintenanceFees, cb) => {
+          if (!Configs.sendFlexMaintenanceInvoice) {
+            return cb(undefined, maintenanceFees)
+          }
           that.createMaintenanceInvoiceFromFlex(maintenanceFees).then(() => {
             cb(undefined, maintenanceFees)
           }).catch(cb)
